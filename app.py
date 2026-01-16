@@ -9,24 +9,60 @@ import time
 
 stellive_db = {
     # 1기생
-    '아이리 칸나': {'group': '1기생', 'trait': '가희(Diva)', 'icon': '🎤', 'atk': 95, 'hp': 40, 'desc': '노래로 적을 제압',
-               'color': '#3B82F6', 'type': 'outdoor'},
-    '아야츠노 유니': {'group': '1기생', 'trait': '아기(Baby)', 'icon': '🍼', 'atk': 50, 'hp': 85, 'desc': '어그로 담당',
-                'color': '#F472B6', 'type': 'indoor'},
+    '아이리 칸나': {
+        'group': '1기생',
+        'trait': ['가희(Diva)', '용', '귀여움'],
+        'icon': '🎤', 'atk': 95, 'hp': 40,
+        'desc': '노래로 적을 제압',
+        'color': '#3B82F6', 'type': 'outdoor'
+    },
+    '아야츠노 유니': {
+        'group': '1기생',
+        'trait': ['아기(Baby)', '유니콘', '어그로'],
+        'icon': '🍼', 'atk': 50,
+        'hp': 85,
+        'desc': '어그로 담당',
+        'color': '#F472B6', 'type': 'indoor'
+    },
 
     # 2기생
-    '시라유키 히나': {'group': '2기생', 'trait': '게이머(Gamer)', 'icon': '🎧', 'atk': 85, 'hp': 50, 'desc': 'FPS 에임 고수',
-                'color': '#A855F7', 'type': 'indoor'},
-    '네네코 마시로': {'group': '2기생', 'trait': '치유(Healer)', 'icon': '☁️', 'atk': 30, 'hp': 90, 'desc': '팀원 보호',
-                'color': '#FCD34D', 'type': 'indoor'},
-    '아카네 리제': {'group': '2기생', 'trait': '피지컬(Muscle)', 'icon': '🍷', 'atk': 88, 'hp': 70, 'desc': '강력한 파괴력',
-               'color': '#EF4444', 'type': 'outdoor'},
-    '아라하시 타비': {'group': '2기생', 'trait': '용사(Hero)', 'icon': '🦈', 'atk': 60, 'hp': 80, 'desc': '기적의 용사',
-                'color': '#06B6D4', 'type': 'outdoor'},
+    '시라유키 히나': {
+        'group': '2기생',
+        'trait': ['게이머(Gamer)', '주당'],
+        'icon': '🎧', 'atk': 85, 'hp': 50,
+        'desc': 'FPS 에임 고수',
+        'color': '#A855F7', 'type': 'indoor'
+    },
+
+    '네네코 마시로': {
+        'group': '2기생',
+        'trait': ['치유(Healer)', '고양이', '청소'],
+        'icon': '☁️', 'atk': 30, 'hp': 90,
+        'desc': '팀원 보호',
+        'color': '#FCD34D', 'type': 'indoor'
+    },
+    '아카네 리제': {
+        'group': '2기생',
+        'trait': ['피지컬(Muscle)', '운동', '공포겜'],
+        'icon': '🍷', 'atk': 88, 'hp': 70,
+        'desc': '강력한 파괴력',
+        'color': '#EF4444', 'type': 'outdoor'
+    },
+    '아라하시 타비': {
+        'group': '2기생',
+        'trait': ['용사(Hero)', '상어', '허당'],
+        'icon': '🦈', 'atk': 60, 'hp': 80,
+        'desc': '기적의 용사',
+        'color': '#06B6D4', 'type': 'outdoor'},
 
     # 사장/기타
-    '강지': {'group': '사장', 'trait': '보스(Boss)', 'icon': '👑', 'atk': 99, 'hp': 99, 'desc': '스텔라이브 사장', 'color': '#111827',
-           'type': 'outdoor'},
+    '강지': {
+        'group': '사장',
+        'trait': ['보스(Boss)', '고양이', '마왕'],
+        'icon': '👑', 'atk': 99, 'hp': 99,
+        'desc': '스텔라이브 사장',
+        'color': '#111827',
+        'type': 'outdoor'},
 }
 
 monster_db = [
@@ -320,6 +356,7 @@ if st.session_state['game_phase'] == 'planning':
                         if info.get('group', '기타') != target_group: continue
 
                 status = st.session_state['char_status'][name]
+                trait_str = ' '.join(info['trait'])
                 fatigue = status['fatigue']
                 is_selected = name in my_team
                 border_style = "2px solid #3B82F6" if is_selected else "1px solid #ddd"
@@ -344,15 +381,18 @@ if st.session_state['game_phase'] == 'planning':
                 else:
                     f_col = "red"
 
+
+
                 with row_cols[idx % 4]:
                     # [MODIFIED] div 스타일에 color:{text_color} 추가하여 글자색 반영
                     st.markdown(f"""
-                    <div style="border:{border_style}; background-color:{bg_color}; color:{text_color}; padding:10px; border-radius:10px; margin-bottom:10px; text-align:center;">
-                        <div style="font-size:30px;">{info['icon']}</div>
-                        <div style="font-weight:bold;">{name}</div>
-                        <div style="color:{f_col}; font-weight:bold; font-size:14px;">피로도 {fatigue}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
+<div style="border:{border_style}; background-color:{bg_color}; color:{text_color}; padding:10px; border-radius:10px; margin-bottom:10px; text-align:center;">
+    <div style="font-size:30px;">{info['icon']}</div>
+    <div style="font-weight:bold; margin-bottom:5px;">{name}</div>
+    <div style="font-size:12px; opacity:0.8; margin-bottom:8px;">{trait_str}</div>
+    <div style="color:{f_col}; font-weight:bold; font-size:14px;">HP {fatigue}</div>
+</div>
+""", unsafe_allow_html=True)
                     if st.button(btn_label, key=f"btn_{title}_{name}", type=btn_type, use_container_width=True):
                         toggle_member(name)
                         st.rerun()
