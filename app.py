@@ -6,27 +6,27 @@ from collections import Counter
 # ==========================================
 # 1. 데이터베이스 (DB Layer)
 # ==========================================
-
+QTE_TRIGGER_TRAITS = ['🐲 용', '🎧 전설', '👑 보스', '🪐 이세계']
 stellive_db = {
     # 1기생
     '아이리 칸나': {
         'group': '1기생',
-        'trait': ['신화', '용', '무희'],
-        'icon': '🎤', 'atk': 95, 'hp': 40,
+        'trait': ['💎 신화', '🐲 용', '💃 무희'],
+        'atk': 95, 'hp': 40,
         'desc': '노래로 적을 제압',
         'color': '#3B82F6', 'type': 'outdoor'
     },
     '아야츠노 유니': {
         'group': '1기생',
-        'trait': ['전설', '동물', '무희'],
-        'icon': '🦄', 'atk': 50, 'hp': 85,
+        'trait': ['🎧 전설', '🦄 동물', '💃 무희'],
+        'atk': 50, 'hp': 85,
         'desc': '어그로 담당',
         'color': '#F472B6', 'type': 'outdoor'
     },
     '사키하네 후야': {
         'group': '1기생',
-        'trait': ['전설', '용', '탱커'],
-        'icon': '🐲', 'atk': 50, 'hp': 85,
+        'trait': ['🎧 전설', '용', '🛡️ 탱커'],
+        'atk': 50, 'hp': 85,
         'desc': '다시태어난마룡',
         'color': '#F472B6', 'type': 'indoor'
     },
@@ -34,7 +34,7 @@ stellive_db = {
     # 2기생
     '시라유키 히나': {
         'group': '2기생',
-        'trait': ['현대','인간', '가희'],
+        'trait': ['🏙️ 현대','👤 인간', '🎤 가희'],
         'icon': '🎧', 'atk': 85, 'hp': 50,
         'desc': 'SIUUUUU',
         'color': '#A855F7', 'type': 'outdoor'
@@ -42,22 +42,22 @@ stellive_db = {
 
     '네네코 마시로': {
         'group': '2기생',
-        'trait': ['우주', '동물', '가희'],
-        'icon': '☁️', 'atk': 30, 'hp': 90,
+        'trait': ['🌌 우주', '🦄 동물', '🎤 가희'],
+        'atk': 30, 'hp': 90,
         'desc': '밍',
         'color': '#FCD34D', 'type': 'indoor'
     },
     '아카네 리제': {
         'group': '2기생',
-        'trait': ['전설', '뱀파이어', '무희'],
-        'icon': '🍷', 'atk': 88, 'hp': 70,
+        'trait': ['🎧 전설', '🧛 뱀파이어', '💃 무희'],
+        'atk': 88, 'hp': 70,
         'desc': '강력한 파괴력',
         'color': '#EF4444', 'type': 'indoor'
     },
     '아라하시 타비': {
         'group': '2기생',
-        'trait': ['이세계', '보물사냥꾼', '탱커'],
-        'icon': '🦈', 'atk': 60, 'hp': 80,
+        'trait': ['🪐 이세계', '👤 인간', '🛡️ 탱커'],
+        'atk': 60, 'hp': 80,
         'desc': '기적의 용사',
         'color': '#06B6D4', 'type': 'outdoor'
     },
@@ -65,32 +65,32 @@ stellive_db = {
     # 3기생
     '텐코 시부키': {
         'group': '3기생',
-        'trait': ['전설', '동물', '무희'],
-        'icon': '🦈', 'atk': 60, 'hp': 80,
+        'trait': ['🎧 전설', '동물', '무희'],
+        'atk': 60, 'hp': 80,
         'desc': '기적의 용사',
         'color': '#06B6D4', 'type': 'outdoor'
     },
 
     '하나코 나나': {
         'group': '3기생',
-        'trait': ['현대', '인간', '가희'],
-        'icon': '🦈', 'atk': 60, 'hp': 80,
+        'trait': ['🏙️ 현대', '👤 인간', '🎤 가희'],
+        'atk': 60, 'hp': 80,
         'desc': '기적의 용사',
         'color': '#06B6D4', 'type': 'outdoor'
     },
 
     '유즈하 리코': {
         'group': '3기생',
-        'trait': ['이세계', '인간', '가희'],
-        'icon': '🦈', 'atk': 60, 'hp': 80,
+        'trait': ['🪐 이세계', '👤 인간', '🎤 가희'],
+        'atk': 60, 'hp': 80,
         'desc': '기적의 용사',
         'color': '#06B6D4', 'type': 'outdoor'
     },
 
     '아오쿠모 린': {
         'group': '3기생',
-        'trait': ['현대', '인간', '탱커'],
-        'icon': '🦈', 'atk': 60, 'hp': 80,
+        'trait': ['🏙️ 현대', '👤 인간', '🛡️ 탱커'],
+        'atk': 60, 'hp': 80,
         'desc': '기적의 용사',
         'color': '#06B6D4', 'type': 'outdoor'
     },
@@ -99,8 +99,8 @@ stellive_db = {
     # 사장/기타
     '강지': {
         'group': '사장',
-        'trait': ['보스', '가희'],
-        'icon': '👑', 'atk': 99, 'hp': 99,
+        'trait': ['👑 보스', '🎤 가희'],
+        'atk': 99, 'hp': 99,
         'desc': '별의 주인',
         'color': '#111827',
         'type': 'outdoor'},
@@ -127,7 +127,21 @@ event_db = [
     {'name': '장비 고장', 'desc': '장비 이슈 발생. (전투력 감소)', 'effect': 'atk_down'},
     {'name': '팬미팅', 'desc': '응원 버프! (전투력 대폭 상승)', 'effect': 'atk_up'},
 ]
-QTE_TRIGGER_TRAITS = ['용', '전설', '보스', '이세계']
+
+# [NEW] 전투 로그용 이벤트 DB (여기서 멘트와 배율을 관리하세요!)
+# {event: 겪은 일, effect: 결과 멘트, mult: 데미지 배율}
+battle_events = [
+    {"event": "화려한 고음을 질러", "effect": "음파 데미지가 폭발했습니다!", "mult": 1.5},
+    {"event": "실수로 마이크를 떨어뜨렸지만", "effect": "오히려 적이 당황했습니다.", "mult": 1.1},
+    {"event": "팬들의 응원을 받고", "effect": "초인적인 힘을 발휘했습니다!", "mult": 1.3},
+    {"event": "평소 연습한 콤보를", "effect": "완벽하게 성공시켰습니다.", "mult": 1.2},
+    {"event": "귀여운 표정을 지어", "effect": "적을 방심하게 만들었습니다.", "mult": 1.1},
+    {"event": "넘어질 뻔했지만 자연스럽게", "effect": "회전 회오리 킥을 날렸습니다!", "mult": 1.4},
+    {"event": "갑자기 방송 텐션이 올라", "effect": "미친듯한 딜을 넣었습니다.", "mult": 1.3},
+    {"event": "방송이 갑자기 꺼지며", "effect": "울기 시작했습니다....", "mult": 0.5},
+    {"event": "방종 후에 마이크가 켜지고", "effect": "자기야~ 나 방종했어...어?!", "mult": 0.5},
+]
+
 # ==========================================
 # 2. 게임 로직 (Logic Layer)
 # ==========================================
@@ -228,7 +242,6 @@ def process_battle_start(team_list):
         'monster': current_monster, 'monster_hp': monster_hp, 'monster_atk': monster_atk
     }
 
-    # ================= [MODIFIED] 시너지 체크 로직 시작 =================
     # 1. 팀원들의 모든 특성을 하나의 리스트로 모으기
     all_traits = []
     for name in team_list:
@@ -263,20 +276,52 @@ def process_battle_start(team_list):
         finalize_battle(1.0, 0.0)
 
 
-def finalize_battle(multiplier, reaction_time):
+def finalize_battle(qte_multiplier, reaction_time):
+    # [MODIFIED] 개별 전투 로그 생성을 위한 로직 변경
     temp = st.session_state['battle_temp']
+    team_list = st.session_state['my_team']
 
-    final_atk = int(temp['base_atk'] * multiplier)
-    remaining_monster_hp = temp['monster_hp'] - final_atk
+    total_atk = 0
+    detailed_logs = []  # 여기에 한 줄씩 로그가 저장됩니다.
 
+    # 1. 각 멤버별로 전투 시뮬레이션 진행
+    for name in team_list:
+        # 기초 스펙 가져오기
+        char_info = stellive_db[name]
+        status = st.session_state['char_status'][name]
+
+        # 기본 공격력 (컨디션/피로도 반영)
+        base_atk = char_info['atk']
+        if status['condition'] > 0:
+            base_atk *= 1.2
+        elif status['condition'] < 0:
+            base_atk *= 0.8
+        if status['fatigue'] < 30: base_atk *= 0.5
+
+        # [핵심] 랜덤 이벤트 뽑기
+        action = random.choice(battle_events)
+
+        # 데미지 계산: 기본공격력 x 이벤트배율 x QTE배율
+        final_char_atk = int(base_atk * action['mult'] * qte_multiplier)
+        total_atk += final_char_atk
+
+        # 로그 메시지 생성 (예: "칸나"가 "고음을 질러" -> "데미지가 폭발했습니다!" (👊 150))
+        log_msg = f"**{name}** 이(가) {action['event']}, **{action['effect']}** (💥 {final_char_atk})"
+        detailed_logs.append(log_msg)
+
+    # 2. 몬스터 체력 계산
+    remaining_monster_hp = temp['monster_hp'] - total_atk
+
+    # 3. QTE 결과 메시지 (전체 요약용)
     crit_log = ""
-    if multiplier >= 2.0:
-        crit_log = f"⚡ **CRITICAL HIT!** (반응: {reaction_time:.3f}초) 데미지 2배 폭발! 💥"
-    elif multiplier > 1.0:
-        crit_log = f"✨ **NICE SHOT!** (반응: {reaction_time:.3f}초) 데미지 1.2배 증가"
+    if qte_multiplier >= 2.0:
+        crit_log = f"⚡ **PERFECT QTE!** (반응: {reaction_time:.3f}초) 전체 데미지 2배 적용!"
+    elif qte_multiplier > 1.0:
+        crit_log = f"✨ **GREAT QTE!** (반응: {reaction_time:.3f}초) 전체 데미지 1.2배 적용!"
     else:
-        crit_log = f"💨 **일반 공격** (반응: {reaction_time:.3f}초)"
+        crit_log = f"💨 **NORMAL QTE** (반응: {reaction_time:.3f}초) 기본 데미지로 공격."
 
+    # 4. 승패 판정
     win = False
     result_msg = ""
     final_hp = temp['hp']
@@ -296,12 +341,16 @@ def finalize_battle(multiplier, reaction_time):
         else:
             win, result_msg = False, "FAIL"
 
+    # 5. 결과 저장 (detailed_logs 추가됨)
     st.session_state['battle_log'] = {
-        'atk': final_atk, 'hp': final_hp,
+        'atk': total_atk, 'hp': final_hp,
         'monster_hp': remaining_monster_hp,
-        'logs': temp['logs'], 'crit_log': crit_log, 'counter_log': counter_log,
+        'logs': temp['logs'],
+        'detailed_logs': detailed_logs,  # [NEW] 개별 전투 로그
+        'crit_log': crit_log,
+        'counter_log': counter_log,
         'win': win, 'result_msg': result_msg,
-        'team': st.session_state['my_team'], 'monster': temp['monster']
+        'team': team_list, 'monster': temp['monster']
     }
 
     st.session_state['game_phase'] = 'result'
@@ -390,17 +439,86 @@ if st.session_state['game_phase'] == 'planning':
             if i < len(my_team):
                 char_name = my_team[i]
                 char_info = stellive_db[char_name]
+                traits_html = ""
+                for t in char_info['trait']:
+                    traits_html += f"<span style='display:inline-block; background:#f0f2f6; color:black; padding:2px 6px; margin:2px; border-radius:4px; font-size:11px;'>{t}</span>"
+
+                # [MODIFIED] 아이콘 제거 및 디자인 변경
                 st.info(f"**{char_name}**")
-                st.markdown(f"<div style='font-size:30px; text-align:center;'>{char_info['icon']}</div>",
-                            unsafe_allow_html=True)
-                if st.button("제외", key=f"remove_{i}"):
+
+                st.markdown(f"""
+                                <div style='text-align:center; margin-bottom:10px;'>
+                                    <div style="margin-bottom:8px; line-height:1.4;">{traits_html}</div>
+                                    <div style="font-size:12px; color:gray;">HP {st.session_state['char_status'][char_name]['fatigue']}</div>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                if st.button("제외", key=f"remove_{i}", use_container_width=True):
                     toggle_member(char_name)
                     st.rerun()
             else:
                 st.markdown(
-                    "<div style='border: 2px dashed #ccc; border-radius:10px; height: 100px; display:flex; align-items:center; justify-content:center; color:#ccc;'>EMPTY</div>",
+                    "<div style='border: 2px dashed #ccc; border-radius:10px; height: 150px; display:flex; align-items:center; justify-content:center; color:#ccc;'>EMPTY</div>",
                     unsafe_allow_html=True)
 
+    if len(my_team) > 0:
+        st.write("")  # 여백
+
+        # 1. 현재 팀의 모든 특성 수집
+        current_traits = []
+        for name in my_team:
+            current_traits.extend(stellive_db[name]['trait'])
+
+        # 2. 개수 세기
+        trait_counts = Counter(current_traits)
+
+        # 3. 발동된 시너지 필터링
+        active_synergies = []
+        possible_synergies = []
+
+        for trait, count in trait_counts.items():
+            if count >= 2:
+                active_synergies.append((trait, count))
+            else:
+                possible_synergies.append(trait)
+
+        # 4. UI 렌더링
+        with st.container(border=True):
+            st.markdown("##### 🔗 현재 발동 시너지")
+
+            if not active_synergies:
+                st.caption("아직 발동된 시너지가 없습니다. 같은 특성을 가진 멤버를 배치해보세요!")
+            else:
+                # 시너지 배지를 가로로 나열
+                # [수정] columns 개수를 유동적으로 조절하여 가로 배치 최적화
+                syn_cols = st.columns(len(active_synergies))
+
+                for idx, (trait, count) in enumerate(active_synergies):
+                    is_qte = trait in QTE_TRIGGER_TRAITS
+
+                    if is_qte:
+                        badge_bg = "linear-gradient(45deg, #FF416C, #FF4B2B)"
+                        badge_icon = "⚔️"
+                        effect_text = "QTE 발동!"
+                    else:
+                        badge_bg = "#555"
+                        badge_icon = "🔹"
+                        effect_text = "스탯 UP"
+
+                    with syn_cols[idx]:
+                        st.markdown(f"""
+                            <div style="background: {badge_bg}; padding: 8px; border-radius: 8px; color: white; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                                <div style="font-size: 14px; font-weight: bold;">{badge_icon} {trait} Lv.{count}</div>
+                                <div style="font-size: 11px; opacity: 0.9;">{effect_text}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+            # 힌트 (여백이 남을 때만 표시)
+            if possible_synergies and len(my_team) < 4:
+                st.write("")
+                st.caption(f"💡 힌트: **{', '.join(possible_synergies[:3])}** 등을 더 모아보세요!")
+
+    # ========================================================================
     btn_disabled = len(my_team) != 4
     if st.button("🔥 전투 출격 (MISSION START)", type="primary", use_container_width=True, disabled=btn_disabled):
         process_battle_start(my_team)
@@ -432,43 +550,51 @@ if st.session_state['game_phase'] == 'planning':
                         if info.get('group', '기타') != target_group: continue
 
                 status = st.session_state['char_status'][name]
-                trait_str = ' '.join(info['trait'])
                 fatigue = status['fatigue']
                 is_selected = name in my_team
-                border_style = "2px solid #3B82F6" if is_selected else "1px solid #ddd"
+                border_style = "2px solid #3B82F6" if is_selected else "1px solid #e0e0e0"
 
-                # [MODIFIED] 선택 상태에 따른 배경 및 글자 색상 로직 수정
+                # [색상 로직]
                 if is_selected:
-                    bg_color = "#3C3CAC"  # 선택된 색상
-                    text_color = "white"  # 선택 시 글자색은 흰색
+                    bg_color = "#3C3CAC"
+                    text_color = "white"
+                    trait_bg = "rgba(255, 255, 255, 0.2)"  # 선택됐을 땐 반투명 흰색 배경
                 else:
-                    bg_color = "#FFFFFF"  # 해제된 색상 (흰색)
-                    text_color = "black"  # 해제 시 글자색은 검은색
+                    bg_color = "#FFFFFF"
+                    text_color = "black"
+                    trait_bg = "#f0f2f6"  # 평소엔 회색 배경
 
                 btn_label = "해제" if is_selected else "선택"
                 btn_type = "secondary" if is_selected else "primary"
 
+                # 피로도 색상
                 if fatigue >= 80:
-                    f_col = "blue"
+                    f_col = "#4CAF50"  # Green
                 elif fatigue >= 40:
-                    f_col = "green"
-                elif fatigue >= 10:
-                    f_col = "orange"
+                    f_col = "#FFC107"  # Orange
                 else:
-                    f_col = "red"
+                    f_col = "#FF5252"  # Red
 
-
+                # [핵심 변경] 특성을 HTML 태그로 감싸서 '배지' 형태로 만듦
+                traits_html = ""
+                for t in info['trait']:
+                    # 특성 하나하나를 둥근 네모 박스에 넣음
+                    traits_html += f"<span style='display:inline-block; background:{trait_bg}; padding:2px 6px; margin:2px; border-radius:4px; font-size:11px;'>{t}</span>"
 
                 with row_cols[idx % 4]:
-                    # [MODIFIED] div 스타일에 color:{text_color} 추가하여 글자색 반영
+                    # [디자인 변경]
+                    # 1. 메인 아이콘({info['icon']}) 삭제
+                    # 2. 이름 폰트 키움 (18px)
+                    # 3. 특성({traits_html})을 강조하여 배치
                     st.markdown(f"""
-<div style="border:{border_style}; background-color:{bg_color}; color:{text_color}; padding:10px; border-radius:10px; margin-bottom:10px; text-align:center;">
-    <div style="font-size:30px;">{info['icon']}</div>
-    <div style="font-weight:bold; margin-bottom:5px;">{name}</div>
-    <div style="font-size:12px; opacity:0.8; margin-bottom:8px;">{trait_str}</div>
-    <div style="color:{f_col}; font-weight:bold; font-size:14px;">HP {fatigue}</div>
-</div>
-""", unsafe_allow_html=True)
+    <div style="border:{border_style}; background-color:{bg_color}; color:{text_color}; padding:12px 5px; border-radius:12px; margin-bottom:10px; text-align:center; height:100%;">
+        <div style="font-weight:bold; font-size:18px; margin-bottom:8px;">{name}</div>
+        <div style="margin-bottom:10px; line-height:1.4;">{traits_html}</div>
+        <div style="font-size:12px; opacity:0.8;">{info['desc']}</div>
+        <div style="margin-top:8px; font-weight:bold; color:{f_col}; font-size:13px;">HP {fatigue}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
                     if st.button(btn_label, key=f"btn_{title}_{name}", type=btn_type, use_container_width=True):
                         toggle_member(name)
                         st.rerun()
@@ -537,6 +663,20 @@ elif st.session_state['game_phase'] == 'result':
     log = st.session_state['battle_log']
     monster = log['monster']
 
+    # [NEW] 전투 로그 애니메이션 출력
+    # (이미 출력했는지 확인하는 플래그가 없으면 매번 다시 출력되므로, expander 안에 넣거나 그냥 보여줍니다)
+    with st.container(border=True):
+        st.markdown("### ⚔️ 전투 상세 기록")
+        st.info(log['crit_log'])  # QTE 결과 먼저 보여줌
+
+        # 한 줄씩 출력 (타자기 효과 느낌)
+        for line in log['detailed_logs']:
+            st.write(line)
+            # time.sleep(0.5) # [선택] 너무 느리면 주석 처리하세요. 스트림릿 특성상 깜빡임이 있을 수 있습니다.
+
+    st.divider()
+
+    # 승패 결과 표시
     if log['result_msg'] == 'SUCCESS':
         st.success("🎉 작전 성공! 적을 물리쳤습니다.")
         st.balloons()
@@ -545,23 +685,21 @@ elif st.session_state['game_phase'] == 'result':
     else:
         st.error("💀 작전 실패. 아군이 전멸했습니다.")
 
-    st.info(log['crit_log'])
-
     if log['counter_log']:
         st.warning(log['counter_log'])
 
+    # 최종 스탯 요약
     c_res1, c_res2 = st.columns(2)
     with c_res1:
-        st.write(f"**아군 총 공격력:** {log['atk']}")
-        st.write(f"**아군 남은 체력:** {log['hp']}")
-        with st.expander("버프 로그 상세"):
-            for l in log['logs']: st.write(l)
+        st.metric("아군 총 데미지", f"{log['atk']}")
+        st.metric("아군 남은 체력", f"{log['hp']}")
     with c_res2:
-        st.write(f"**적 남은 체력:** {log['monster_hp']}")
-        st.write(f"**적:** {monster['name']}")
+        st.metric("적 남은 체력", f"{log['monster_hp']}")
+        st.metric("적 정보", monster['name'])
 
     st.write("---")
 
+    # (아래 피로도 정산 및 하루 마무리 버튼 코드는 기존과 동일)
     cost = 30
     if st.session_state['today_weather']['name'] == '태풍': cost = 50
     if st.session_state['today_event']['effect'] == 'stamina_save': cost = 10
