@@ -132,14 +132,16 @@ event_db = [
 # {event: 겪은 일, effect: 결과 멘트, mult: 데미지 배율}
 battle_events = [
     {"event": "화려한 고음을 질러", "effect": "음파 데미지가 폭발했습니다!", "mult": 1.5},
-    {"event": "실수로 마이크를 떨어뜨렸지만", "effect": "오히려 적이 당황했습니다.", "mult": 1.1},
-    {"event": "팬들의 응원을 받고", "effect": "초인적인 힘을 발휘했습니다!", "mult": 1.3},
-    {"event": "평소 연습한 콤보를", "effect": "완벽하게 성공시켰습니다.", "mult": 1.2},
+    {"event": "실수로 마이크를 떨어뜨렸지만", "effect": "오히려 적이 당황했습니다.", "mult": 2.0},
+    {"event": "팬들의 응원을 받고", "effect": "초인적인 힘을 발휘했습니다!", "mult": 2.0},
+    {"event": "평소 연습한 콤보를", "effect": "완벽하게 성공시켰습니다.", "mult": 2.2},
     {"event": "귀여운 표정을 지어", "effect": "적을 방심하게 만들었습니다.", "mult": 1.1},
     {"event": "넘어질 뻔했지만 자연스럽게", "effect": "회전 회오리 킥을 날렸습니다!", "mult": 1.4},
-    {"event": "갑자기 방송 텐션이 올라", "effect": "미친듯한 딜을 넣었습니다.", "mult": 1.3},
+    {"event": "갑자기 방송 텐션이 올라", "effect": "미친듯한 딜을 넣었습니다.", "mult": 1.2},
     {"event": "방송이 갑자기 꺼지며", "effect": "울기 시작했습니다....", "mult": 0.5},
-    {"event": "방종 후에 마이크가 켜지고", "effect": "자기야~ 나 방종했어...어?!", "mult": 0.5},
+    {"event": "방종 후에 마이크가 켜지고", "effect": "자기야~ 나 방종했어...어?!", "mult": 0.3},
+    {"event": "팬들의 응원에 힘입어", "effect": "아무 일도 없었습니다.", "mult": 1.0},
+    {"event": "화려한 음악이 나를 감싸고", "effect": "딱히 별 일은 아니었네요.", "mult": 1.0},
 ]
 
 # ==========================================
@@ -229,6 +231,40 @@ def calculate_base_stats(team_list):
 
     return int(total_atk), int(total_hp), logs
 
+# UI 렌더링용 도우미 함수 (카드 HTML 생성)
+def get_character_card_html(name, info, status, is_selected):
+    # 1. 배경/글자 색상 설정
+    if is_selected:
+        bg_color = "#3C3CAC"
+        text_color = "white"
+        trait_bg = "rgba(255, 255, 255, 0.2)"
+        border_style = "2px solid #3B82F6"
+    else:
+        bg_color = "#FFFFFF"
+        text_color = "black"
+        trait_bg = "#f0f2f6"
+        border_style = "1px solid #e0e0e0"
+
+    # 2. 피로도 색상 설정
+    fatigue = status['fatigue']
+    if fatigue >= 80: f_col = "#4CAF50" # Green
+    elif fatigue >= 40: f_col = "#FFC107" # Orange
+    else: f_col = "#FF5252" # Red
+
+    # 3. 특성 배지 HTML 생성
+    traits_html = ""
+    for t in info['trait']:
+        traits_html += f"<span style='display:inline-block; background:{trait_bg}; padding:2px 6px; margin:2px; border-radius:4px; font-size:11px;'>{t}</span>"
+
+    # 4. 최종 HTML 반환
+    return f"""
+    <div style="border:{border_style}; background-color:{bg_color}; color:{text_color}; padding:12px 5px; border-radius:12px; margin-bottom:10px; text-align:center; height:100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="font-weight:bold; font-size:18px; margin-bottom:8px;">{name}</div>
+        <div style="margin-bottom:10px; line-height:1.4;">{traits_html}</div>
+        <div style="font-size:12px; opacity:0.8; margin-bottom: 5px;">{info['desc']}</div>
+        <div style="font-weight:bold; color:{f_col}; font-size:13px;">HP {fatigue}</div>
+    </div>
+    """
 
 def process_battle_start(team_list):
     atk, hp, logs = calculate_base_stats(team_list)
@@ -276,21 +312,21 @@ def process_battle_start(team_list):
         finalize_battle(1.0, 0.0)
 
 
-def finalize_battle(qte_multiplier, reaction_time):
-    # [MODIFIED] 개별 전투 로그 생성을 위한 로직 변경
+def finalize_battle(multiplier, reaction_time):
     temp = st.session_state['battle_temp']
+
+    # [MODIFIED] 개별 전투 로그 생성을 위한 로직 변경
     team_list = st.session_state['my_team']
 
     total_atk = 0
-    detailed_logs = []  # 여기에 한 줄씩 로그가 저장됩니다.
+    detailed_logs = []  # 여기에 HTML 스타일이 적용된 로그가 저장됩니다.
 
     # 1. 각 멤버별로 전투 시뮬레이션 진행
     for name in team_list:
-        # 기초 스펙 가져오기
         char_info = stellive_db[name]
         status = st.session_state['char_status'][name]
 
-        # 기본 공격력 (컨디션/피로도 반영)
+        # 기본 공격력 계산
         base_atk = char_info['atk']
         if status['condition'] > 0:
             base_atk *= 1.2
@@ -298,30 +334,49 @@ def finalize_battle(qte_multiplier, reaction_time):
             base_atk *= 0.8
         if status['fatigue'] < 30: base_atk *= 0.5
 
-        # [핵심] 랜덤 이벤트 뽑기
+        # 랜덤 이벤트 뽑기
         action = random.choice(battle_events)
+        mult = action['mult']  # 현재 이벤트의 배율
 
-        # 데미지 계산: 기본공격력 x 이벤트배율 x QTE배율
-        final_char_atk = int(base_atk * action['mult'] * qte_multiplier)
+        # 최종 데미지 계산
+        final_char_atk = int(base_atk * mult * multiplier)
         total_atk += final_char_atk
 
-        # 로그 메시지 생성 (예: "칸나"가 "고음을 질러" -> "데미지가 폭발했습니다!" (👊 150))
-        log_msg = f"**{name}** 이(가) {action['event']}, **{action['effect']}** (💥 {final_char_atk})"
+        # [NEW] 배율에 따른 동적 스타일링 로직
+        if mult > 1.2:
+            # 대성공 (배율이 1.2 초과): 크고 파란색, 강조됨
+            style = "font-size: 1.2em; color: #2563EB; font-weight: bold; padding: 5px;"
+            prefix = "🚀 SUPER:"
+        elif mult < 1.0:
+            # 실패/패널티 (배율이 1.0 미만): 작고 회색, 힘빠짐
+            style = "font-size: 0.9em; color: #ff6347; font-style: italic; padding: 2px;"
+            prefix = "💧 BAD:"
+        else:
+            # 평타 (1.0 ~ 1.2): 기본 스타일
+            style = "font-size: 1.0em; color: #ffffff; padding: 3px;"
+            prefix = "💥 NORMAL:"
+
+        # HTML 태그로 감싼 로그 메시지 생성
+        log_msg = f"""
+        <div style="{style} margin-bottom: 5px;">
+            {prefix} <b>{name}</b> 이(가) {action['event']}, {action['effect']} (DMG: {final_char_atk})
+        </div>
+        """
         detailed_logs.append(log_msg)
 
-    # 2. 몬스터 체력 계산
+    # 2. 몬스터 체력 및 결과 계산
     remaining_monster_hp = temp['monster_hp'] - total_atk
 
-    # 3. QTE 결과 메시지 (전체 요약용)
+    # QTE 결과 메시지
     crit_log = ""
-    if qte_multiplier >= 2.0:
+    if multiplier >= 2.0:
         crit_log = f"⚡ **PERFECT QTE!** (반응: {reaction_time:.3f}초) 전체 데미지 2배 적용!"
-    elif qte_multiplier > 1.0:
+    elif multiplier > 1.0:
         crit_log = f"✨ **GREAT QTE!** (반응: {reaction_time:.3f}초) 전체 데미지 1.2배 적용!"
     else:
         crit_log = f"💨 **NORMAL QTE** (반응: {reaction_time:.3f}초) 기본 데미지로 공격."
 
-    # 4. 승패 판정
+    # 승패 판정
     win = False
     result_msg = ""
     final_hp = temp['hp']
@@ -335,23 +390,25 @@ def finalize_battle(qte_multiplier, reaction_time):
         monster_dmg = temp['monster_atk']
         final_hp -= monster_dmg
         counter_log = f"😡 몬스터가 버텨냈습니다! 반격 데미지 -{monster_dmg}"
-
         if final_hp > 0:
             win, result_msg = True, "DRAW"
         else:
             win, result_msg = False, "FAIL"
 
-    # 5. 결과 저장 (detailed_logs 추가됨)
+    # 5. 결과 저장
     st.session_state['battle_log'] = {
         'atk': total_atk, 'hp': final_hp,
         'monster_hp': remaining_monster_hp,
         'logs': temp['logs'],
-        'detailed_logs': detailed_logs,  # [NEW] 개별 전투 로그
+        'detailed_logs': detailed_logs,  # HTML 로그 저장
         'crit_log': crit_log,
         'counter_log': counter_log,
         'win': win, 'result_msg': result_msg,
         'team': team_list, 'monster': temp['monster']
     }
+
+    # 애니메이션 상태 초기화
+    st.session_state['log_animated'] = False
 
     st.session_state['game_phase'] = 'result'
     st.rerun()
@@ -439,19 +496,12 @@ if st.session_state['game_phase'] == 'planning':
             if i < len(my_team):
                 char_name = my_team[i]
                 char_info = stellive_db[char_name]
-                traits_html = ""
-                for t in char_info['trait']:
-                    traits_html += f"<span style='display:inline-block; background:#f0f2f6; color:black; padding:2px 6px; margin:2px; border-radius:4px; font-size:11px;'>{t}</span>"
+                status = st.session_state['char_status'][char_name]  # status 가져오기
 
-                # [MODIFIED] 아이콘 제거 및 디자인 변경
-                st.info(f"**{char_name}**")
+                # [개선] 함수 호출로 대체!
+                card_html = get_character_card_html(char_name, char_info, status, True)  # True는 선택됨 의미
 
-                st.markdown(f"""
-                                <div style='text-align:center; margin-bottom:10px;'>
-                                    <div style="margin-bottom:8px; line-height:1.4;">{traits_html}</div>
-                                    <div style="font-size:12px; color:gray;">HP {st.session_state['char_status'][char_name]['fatigue']}</div>
-                                </div>
-                                """, unsafe_allow_html=True)
+                st.markdown(card_html, unsafe_allow_html=True)
 
                 if st.button("제외", key=f"remove_{i}", use_container_width=True):
                     toggle_member(char_name)
@@ -582,22 +632,15 @@ if st.session_state['game_phase'] == 'planning':
                     traits_html += f"<span style='display:inline-block; background:{trait_bg}; padding:2px 6px; margin:2px; border-radius:4px; font-size:11px;'>{t}</span>"
 
                 with row_cols[idx % 4]:
-                    # [디자인 변경]
-                    # 1. 메인 아이콘({info['icon']}) 삭제
-                    # 2. 이름 폰트 키움 (18px)
-                    # 3. 특성({traits_html})을 강조하여 배치
-                    st.markdown(f"""
-    <div style="border:{border_style}; background-color:{bg_color}; color:{text_color}; padding:12px 5px; border-radius:12px; margin-bottom:10px; text-align:center; height:100%;">
-        <div style="font-weight:bold; font-size:18px; margin-bottom:8px;">{name}</div>
-        <div style="margin-bottom:10px; line-height:1.4;">{traits_html}</div>
-        <div style="font-size:12px; opacity:0.8;">{info['desc']}</div>
-        <div style="margin-top:8px; font-weight:bold; color:{f_col}; font-size:13px;">HP {fatigue}</div>
-    </div>
-    """, unsafe_allow_html=True)
+                    with row_cols[idx % 4]:
+                        # [개선] 함수 호출로 대체!
+                        card_html = get_character_card_html(name, info, status, is_selected)
 
-                    if st.button(btn_label, key=f"btn_{title}_{name}", type=btn_type, use_container_width=True):
-                        toggle_member(name)
-                        st.rerun()
+                        st.markdown(card_html, unsafe_allow_html=True)
+
+                        if st.button(btn_label, key=f"btn_{title}_{name}", type=btn_type, use_container_width=True):
+                            toggle_member(name)
+                            st.rerun()
                 idx += 1
 
 # --- [Phase 1.5: 공격 타이밍 미니게임] ---
@@ -663,20 +706,33 @@ elif st.session_state['game_phase'] == 'result':
     log = st.session_state['battle_log']
     monster = log['monster']
 
-    # [NEW] 전투 로그 애니메이션 출력
-    # (이미 출력했는지 확인하는 플래그가 없으면 매번 다시 출력되므로, expander 안에 넣거나 그냥 보여줍니다)
+    # [MODIFIED] 타자기 효과 + HTML 스타일링 적용
     with st.container(border=True):
         st.markdown("### ⚔️ 전투 상세 기록")
-        st.info(log['crit_log'])  # QTE 결과 먼저 보여줌
+        st.info(log['crit_log'])
 
-        # 한 줄씩 출력 (타자기 효과 느낌)
-        for line in log['detailed_logs']:
-            st.write(line)
-            # time.sleep(0.5) # [선택] 너무 느리면 주석 처리하세요. 스트림릿 특성상 깜빡임이 있을 수 있습니다.
+        # 1. 애니메이션 출력 (타자기 효과)
+        if not st.session_state.get('log_animated', False):
+            placeholder = st.empty()
+            accumulated_logs = []
+
+            for line in log['detailed_logs']:
+                accumulated_logs.append(line)
+                # [중요] HTML 태그가 포함되어 있으므로 unsafe_allow_html=True 필수
+                placeholder.markdown("".join(accumulated_logs), unsafe_allow_html=True)
+                time.sleep(0.7)  # 속도 조절
+
+            st.session_state['log_animated'] = True
+
+        # 2. 정적 출력 (깜빡임 방지)
+        else:
+            for line in log['detailed_logs']:
+                # 여기도 마찬가지로 HTML 허용
+                st.markdown(line, unsafe_allow_html=True)
 
     st.divider()
 
-    # 승패 결과 표시
+    # (이 아래 승패 결과, 스탯 표시 등 나머지 코드는 기존과 동일하게 유지)
     if log['result_msg'] == 'SUCCESS':
         st.success("🎉 작전 성공! 적을 물리쳤습니다.")
         st.balloons()
@@ -688,18 +744,18 @@ elif st.session_state['game_phase'] == 'result':
     if log['counter_log']:
         st.warning(log['counter_log'])
 
-    # 최종 스탯 요약
     c_res1, c_res2 = st.columns(2)
     with c_res1:
-        st.metric("아군 총 데미지", f"{log['atk']}")
-        st.metric("아군 남은 체력", f"{log['hp']}")
+        st.write(f"**아군 총 공격력:** {log['atk']}")
+        st.write(f"**아군 남은 체력:** {log['hp']}")
+        with st.expander("버프 로그 상세"):
+            for l in log['logs']: st.write(l)
     with c_res2:
-        st.metric("적 남은 체력", f"{log['monster_hp']}")
-        st.metric("적 정보", monster['name'])
+        st.write(f"**적 남은 체력:** {log['monster_hp']}")
+        st.write(f"**적:** {monster['name']}")
 
     st.write("---")
 
-    # (아래 피로도 정산 및 하루 마무리 버튼 코드는 기존과 동일)
     cost = 30
     if st.session_state['today_weather']['name'] == '태풍': cost = 50
     if st.session_state['today_event']['effect'] == 'stamina_save': cost = 10
