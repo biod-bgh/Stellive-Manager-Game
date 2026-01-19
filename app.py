@@ -1,6 +1,7 @@
 import streamlit as st
 import random
 import time
+from collections import Counter
 
 # ==========================================
 # 1. 데이터베이스 (DB Layer)
@@ -126,7 +127,7 @@ event_db = [
     {'name': '장비 고장', 'desc': '장비 이슈 발생. (전투력 감소)', 'effect': 'atk_down'},
     {'name': '팬미팅', 'desc': '응원 버프! (전투력 대폭 상승)', 'effect': 'atk_up'},
 ]
-
+QTE_TRIGGER_TRAITS = ['용', '전설', '보스']
 # ==========================================
 # 2. 게임 로직 (Logic Layer)
 # ==========================================
@@ -227,9 +228,39 @@ def process_battle_start(team_list):
         'monster': current_monster, 'monster_hp': monster_hp, 'monster_atk': monster_atk
     }
 
-    st.session_state['qte_state'] = 'READY'
-    st.session_state['game_phase'] = 'attack_minigame'
-    st.rerun()
+    # ================= [MODIFIED] 시너지 체크 로직 시작 =================
+    # 1. 팀원들의 모든 특성을 하나의 리스트로 모으기
+    all_traits = []
+    for name in team_list:
+        all_traits.extend(stellive_db[name]['trait'])
+
+    # 2. 특성별 개수 세기
+    trait_counts = Counter(all_traits)
+
+    # 3. 2개 이상 겹치는 특성이 있는지 확인
+    synergy_trait = None
+    for trait, count in trait_counts.items():
+        if count >= 2 and trait in QTE_TRIGGER_TRAITS:
+            synergy_trait = trait
+            break
+
+    if synergy_trait:
+        # 시너지 있음 -> QTE(미니게임) 발동!
+        st.session_state['synergy_name'] = synergy_trait  # UI에 보여주기 위해 저장
+        st.toast(f"✨ '{synergy_trait}' 특성 공명 발동! 연계 공격 기회!", icon="⚔️")
+
+        st.session_state['qte_state'] = 'READY'
+        st.session_state['game_phase'] = 'attack_minigame'
+        st.rerun()
+    else:
+        # 시너지 없음 -> 미니게임 없이 일반 공격 (배율 1.0)
+        if any(c >= 2 for c in trait_counts.values()):
+            st.toast("시너지가 발생했지만 전투 특성이 아닙니다. 일반 공격으로 전환합니다.", icon="💬")
+        else:
+            st.toast("발동된 시너지가 없습니다.", icon="☁️")
+
+        time.sleep(1.0)
+        finalize_battle(1.0, 0.0)
 
 
 def finalize_battle(multiplier, reaction_time):
@@ -378,10 +409,15 @@ if st.session_state['game_phase'] == 'planning':
 
     # 대기실
     st.subheader("👥 대기실 (멤버 선택)")
-    tab_titles = ["ALL", "1기생", "2기생", "사장/기타"]
+    tab_titles = ["ALL", "1기생", "2기생", "3기생","사장/기타"]
     tabs = st.tabs(tab_titles)
 
-    filter_groups = {"ALL": None, "1기생": "1기생", "2기생": "2기생", "사장/기타": ["사장", "3기생"]}
+    filter_groups = {"ALL": None,
+                     "1기생": "1기생",
+                     "2기생": "2기생",
+                     "3기생": "3기생",
+                     "사장/기타": "사장"
+                     }
 
     for tab, title in zip(tabs, tab_titles):
         with tab:
@@ -441,8 +477,12 @@ if st.session_state['game_phase'] == 'planning':
 # --- [Phase 1.5: 공격 타이밍 미니게임] ---
 elif st.session_state['game_phase'] == 'attack_minigame':
 
-    st.markdown("## ⚔️ 아군 공격 턴!")
-    st.write("스킬 에너지를 모으는 중입니다... 신호가 오면 **발사**하세요!")
+    # [MODIFIED] 어떤 시너지가 발동했는지 표시
+    synergy = st.session_state.get('synergy_name', '알 수 없음')
+
+    st.markdown(f"## ⚔️ '{synergy}' 특성 연계 공격 발동!")
+    st.info(f"파티원들의 **[{synergy}]** 특성이 공명하여 강력한 스킬을 준비합니다!")
+    st.write("신호가 오면 **발사**하여 데미지를 증폭시키세요!")
 
     col_spacer1, col_center, col_spacer2 = st.columns([1, 2, 1])
 
