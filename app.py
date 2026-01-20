@@ -128,7 +128,6 @@ event_db = [
     {'name': '팬미팅', 'desc': '응원 버프! (전투력 대폭 상승)', 'effect': 'atk_up'},
 ]
 
-# [NEW] 전투 로그용 이벤트 DB (여기서 멘트와 배율을 관리하세요!)
 # {event: 겪은 일, effect: 결과 멘트, mult: 데미지 배율}
 battle_events = [
     {"event": "화려한 고음을 질러", "effect": "음파 데미지가 폭발했습니다!", "mult": 1.5},
@@ -233,23 +232,43 @@ def calculate_base_stats(team_list):
 
 # UI 렌더링용 도우미 함수 (카드 HTML 생성)
 def get_character_card_html(name, info, status, is_selected):
+    # 피로도 확인
+    fatigue = status['fatigue']
+    is_exhausted = fatigue <= 0
+
     # 1. 배경/글자 색상 설정
     if is_selected:
-        bg_color = "#3C3CAC"
-        text_color = "white"
-        trait_bg = "rgba(255, 255, 255, 0.2)"
-        border_style = "2px solid #3B82F6"
+        if is_exhausted:
+            # 선택되어 있는데 피로도 0 진한 빨강
+            bg_color = "#B91C1C"  # Dark Red
+            text_color = "white"
+            border_style = "2px solid #EF4444"
+            trait_bg = "rgba(255, 255, 255, 0.2)"
+        else:
+            # 팀편성되고, 선택 가능한 상태
+            bg_color = "#3C3CAC"
+            text_color = "white"
+            trait_bg = "rgba(255, 255, 255, 0.2)"
+            border_style = "2px solid #3B82F6"
     else:
-        bg_color = "#FFFFFF"
-        text_color = "black"
-        trait_bg = "#f0f2f6"
-        border_style = "1px solid #e0e0e0"
+        if is_exhausted:
+            #선택 안 됨 + 탈진 (선택 불가) -> 연한 빨강
+            bg_color = "#FEF2F2"  # Very Light Red
+            text_color = "#991B1B"  # Dark Red Text
+            border_style = "2px dashed #EF4444"  # 빨간 점선 테두리
+            trait_bg = "#FECACA"  # 붉은색 특성 배경
+        else:
+            # 팀편성되지 않고, 선택 가능 상태
+            bg_color = "#FFFFFF"
+            text_color = "black"
+            trait_bg = "#f0f2f6"
+            border_style = "1px solid #e0e0e0"
 
     # 2. 피로도 색상 설정
-    fatigue = status['fatigue']
     if fatigue >= 80: f_col = "#4CAF50" # Green
     elif fatigue >= 40: f_col = "#FFC107" # Orange
-    else: f_col = "#FF5252" # Red
+    elif fatigue > 0: f_col = "#FF5252"
+    else: f_col = "#991B1B" # Red
 
     # 3. 특성 배지 HTML 생성
     traits_html = ""
@@ -257,14 +276,36 @@ def get_character_card_html(name, info, status, is_selected):
         traits_html += f"<span style='display:inline-block; background:{trait_bg}; padding:2px 6px; margin:2px; border-radius:4px; font-size:11px;'>{t}</span>"
 
     # 4. 최종 HTML 반환
+    opacity = "0.6" if (is_exhausted and not is_selected) else "1.0"
+
     return f"""
     <div style="border:{border_style}; background-color:{bg_color}; color:{text_color}; padding:12px 5px; border-radius:12px; margin-bottom:10px; text-align:center; height:100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         <div style="font-weight:bold; font-size:18px; margin-bottom:8px;">{name}</div>
         <div style="margin-bottom:10px; line-height:1.4;">{traits_html}</div>
         <div style="font-size:12px; opacity:0.8; margin-bottom: 5px;">{info['desc']}</div>
-        <div style="font-weight:bold; color:{f_col}; font-size:13px;">HP {fatigue}</div>
+        <div style="font-weight:bold; color:{f_col}; font-size:13px;">피로도 {fatigue}</div>
     </div>
     """
+
+def toggle_member(name):
+    team = st.session_state['my_team']
+    status = st.session_state['char_status'][name]  # 캐릭터 상태 가져오기
+
+    if name in team:
+        # [제외는 언제나 가능]
+        team.remove(name)
+    else:
+        # [추가 시 검사 로직]
+        # 1. 피로도 체크: 0 이하면 추가 불가
+        if status['fatigue'] <= 0:
+            st.toast(f"🚫 {name}님은 탈진 상태(HP 0)라 선택할 수 없습니다! 휴식이 필요합니다.", icon="🏥")
+            return  # 함수 강제 종료 (추가 안 됨)
+
+        # 2. 인원수 체크
+        if len(team) < 4:
+            team.append(name)
+        else:
+            st.toast("🚫 파티는 최대 4명까지만 가능합니다!", icon="⚠️")
 
 def process_battle_start(team_list):
     atk, hp, logs = calculate_base_stats(team_list)
@@ -303,12 +344,11 @@ def process_battle_start(team_list):
         st.rerun()
     else:
         # 시너지 없음 -> 미니게임 없이 일반 공격 (배율 1.0)
-        if any(c >= 2 for c in trait_counts.values()):
-            st.toast("시너지가 발생했지만 전투 특성이 아닙니다. 일반 공격으로 전환합니다.", icon="💬")
-        else:
-            st.toast("발동된 시너지가 없습니다.", icon="☁️")
+        # if any(c >= 2 for c in trait_counts.values()):
+        #     st.toast("시너지가 발생했지만 전투 특성이 아닙니다. 일반 공격으로 전환합니다.", icon="💬")
+        # else:
+        #     st.toast("발동된 시너지가 없습니다.", icon="☁️")
 
-        time.sleep(1.0)
         finalize_battle(1.0, 0.0)
 
 
@@ -344,17 +384,17 @@ def finalize_battle(multiplier, reaction_time):
 
         # [NEW] 배율에 따른 동적 스타일링 로직
         if mult > 1.2:
-            # 대성공 (배율이 1.2 초과): 크고 파란색, 강조됨
-            style = "font-size: 1.2em; color: #2563EB; font-weight: bold; padding: 5px;"
-            prefix = "🚀 SUPER:"
+            # 대성공 (배율이 1.2 초과): 크고 주황색, 강조됨
+            style = "font-size: 1.2em; color: #ff8c00; font-weight: bold; padding: 5px;"
+            prefix = "💥 SUPER:"
         elif mult < 1.0:
             # 실패/패널티 (배율이 1.0 미만): 작고 회색, 힘빠짐
-            style = "font-size: 0.9em; color: #ff6347; font-style: italic; padding: 2px;"
+            style = "font-size: 0.9em; color: #808080; font-style: italic; padding: 2px;"
             prefix = "💧 BAD:"
         else:
             # 평타 (1.0 ~ 1.2): 기본 스타일
             style = "font-size: 1.0em; color: #ffffff; padding: 3px;"
-            prefix = "💥 NORMAL:"
+            prefix = "NORMAL:"
 
         # HTML 태그로 감싼 로그 메시지 생성
         log_msg = f"""
@@ -568,10 +608,21 @@ if st.session_state['game_phase'] == 'planning':
                 st.write("")
                 st.caption(f"💡 힌트: **{', '.join(possible_synergies[:3])}** 등을 더 모아보세요!")
 
-    # ========================================================================
+    exhausted_members = []
+    for m_name in my_team:
+        if st.session_state['char_status'][m_name]['fatigue'] <= 0:
+            exhausted_members.append(m_name)
+
     btn_disabled = len(my_team) != 4
+
     if st.button("🔥 전투 출격 (MISSION START)", type="primary", use_container_width=True, disabled=btn_disabled):
-        process_battle_start(my_team)
+        if len(exhausted_members) > 0:
+            # [차단] 탈진 멤버가 있으면 경고 메시지 출력하고 함수 실행 안 함
+            st.error(f"🚫 출격 불가! 다음 멤버의 피로도가 0입니다: {', '.join(exhausted_members)}")
+            st.toast("팀원을 교체하거나 휴식을 취해야 합니다.", icon="🏥")
+        else:
+            # [통과] 모두 건강하면 전투 시작
+            process_battle_start(my_team)
 
     st.divider()
 
@@ -632,15 +683,14 @@ if st.session_state['game_phase'] == 'planning':
                     traits_html += f"<span style='display:inline-block; background:{trait_bg}; padding:2px 6px; margin:2px; border-radius:4px; font-size:11px;'>{t}</span>"
 
                 with row_cols[idx % 4]:
-                    with row_cols[idx % 4]:
-                        # [개선] 함수 호출로 대체!
-                        card_html = get_character_card_html(name, info, status, is_selected)
+                    # [개선] 함수 호출로 대체!
+                    card_html = get_character_card_html(name, info, status, is_selected)
 
-                        st.markdown(card_html, unsafe_allow_html=True)
+                    st.markdown(card_html, unsafe_allow_html=True)
 
-                        if st.button(btn_label, key=f"btn_{title}_{name}", type=btn_type, use_container_width=True):
-                            toggle_member(name)
-                            st.rerun()
+                    if st.button(btn_label, key=f"btn_{title}_{name}", type=btn_type, use_container_width=True):
+                        toggle_member(name)
+                        st.rerun()
                 idx += 1
 
 # --- [Phase 1.5: 공격 타이밍 미니게임] ---
@@ -720,7 +770,7 @@ elif st.session_state['game_phase'] == 'result':
                 accumulated_logs.append(line)
                 # [중요] HTML 태그가 포함되어 있으므로 unsafe_allow_html=True 필수
                 placeholder.markdown("".join(accumulated_logs), unsafe_allow_html=True)
-                time.sleep(0.7)  # 속도 조절
+                time.sleep(0.5)  # 속도 조절
 
             st.session_state['log_animated'] = True
 
@@ -735,7 +785,7 @@ elif st.session_state['game_phase'] == 'result':
     # (이 아래 승패 결과, 스탯 표시 등 나머지 코드는 기존과 동일하게 유지)
     if log['result_msg'] == 'SUCCESS':
         st.success("🎉 작전 성공! 적을 물리쳤습니다.")
-        st.balloons()
+        #st.balloons()
     elif log['result_msg'] == 'DRAW':
         st.warning("⚠️ 작전 무승부. 적을 처치하진 못했지만 생존했습니다.")
     else:
