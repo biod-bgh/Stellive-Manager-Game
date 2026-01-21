@@ -344,12 +344,13 @@ def process_battle_start(team_list):
         st.rerun()
     else:
         # 시너지 없음 -> 미니게임 없이 일반 공격 (배율 1.0)
+        st.session_state['game_phase'] = 'calculating'
         # if any(c >= 2 for c in trait_counts.values()):
         #     st.toast("시너지가 발생했지만 전투 특성이 아닙니다. 일반 공격으로 전환합니다.", icon="💬")
         # else:
         #     st.toast("발동된 시너지가 없습니다.", icon="☁️")
 
-        finalize_battle(1.0, 0.0)
+        st.rerun()
 
 
 def finalize_battle(multiplier, reaction_time):
@@ -749,6 +750,26 @@ elif st.session_state['game_phase'] == 'attack_minigame':
                         multiplier = 1.0  # 보통
 
                     finalize_battle(multiplier, reaction)
+
+# [화면 전환용 단계]
+# 대기실 -> 결과 화면 전환 방식 통일
+elif st.session_state['game_phase'] == 'calculating':
+    st.markdown("## ⚔️ 일반 공격 준비")
+    st.info("특별한 시너지가 발견되지 않았습니다. 기본 전술로 공격을 수행합니다.")
+
+    st.write("")  # 여백
+    st.write("")
+
+    col_spacer1, col_center, col_spacer2 = st.columns([1, 2, 1])
+
+    with col_center:
+        st.markdown("<h3 style='text-align:center;'>명령 대기 중...</h3>", unsafe_allow_html=True)
+
+        # 유저가 직접 눌러야 넘어감
+        if st.button("⚔️ 공격 개시 (ENGAGE)", type="primary", use_container_width=True):
+            # 일반 공격이므로 배율 1.0, 반응속도 0.0으로 처리
+            finalize_battle(1.0, 0.0)
+    pass
 
 # --- [Phase 2: 결과 단계] ---
 elif st.session_state['game_phase'] == 'result':
