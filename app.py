@@ -9,13 +9,6 @@ from collections import Counter
 QTE_TRIGGER_TRAITS = ['🐲 용', '🎧 전설', '👑 보스', '🪐 이세계']
 stellive_db = {
     # 1기생
-    # '아이리 칸나': {
-    #     'group': '1기생',
-    #     'trait': ['💎 신화', '🐲 용', '💃 무희'],
-    #     'atk': 95, 'hp': 40,
-    #     'desc': '노래로 적을 제압',
-    #     'color': '#3B82F6', 'type': 'outdoor'
-    # },
     '아야츠노 유니': {
         'group': '1기생',
         'trait': ['✨ 전설', '🦄 동물', '💃 무희'],
@@ -34,7 +27,7 @@ stellive_db = {
     # 2기생
     '시라유키 히나': {
         'group': '2기생',
-        'trait': ['🏙️ 현대','👤 인간', '🎤 가희'],
+        'trait': ['🏙️ 현대', '👤 인간', '🎤 가희'],
         'icon': '🎧', 'atk': 85, 'hp': 50,
         'desc': 'SIUUUUU',
         'color': '#A855F7', 'type': 'outdoor'
@@ -65,7 +58,7 @@ stellive_db = {
     # 3기생
     '텐코 시부키': {
         'group': '3기생',
-        'trait': ['✨ 전설', '동물', '무희'],
+        'trait': ['✨ 전설', '🦄 동물', '💃 무희'],
         'atk': 60, 'hp': 80,
         'desc': '기적의 용사',
         'color': '#06B6D4', 'type': 'outdoor'
@@ -95,7 +88,6 @@ stellive_db = {
         'color': '#06B6D4', 'type': 'outdoor'
     },
 
-
     # 사장/기타
     '강지': {
         'group': '사장',
@@ -117,18 +109,17 @@ monster_db = [
 weather_db = {
     '맑음': {'icon': '☀️', 'desc': '야외 활동하기 좋습니다.', 'buff': 'outdoor', 'debuff': 'indoor'},
     '비': {'icon': '☔', 'desc': '집에서 게임하기 좋습니다.', 'buff': 'indoor', 'debuff': 'outdoor'},
-    '태풍': {'icon': '🌪️', 'desc': '피로도 소모 증가!', 'buff': None, 'debuff': 'all'},
+    '태풍': {'icon': '🌪️', 'desc': '전투 난이도 증가!', 'buff': None, 'debuff': 'all'},
     '오로라': {'icon': '🌌', 'desc': '모두의 컨디션 상승.', 'buff': 'all', 'debuff': None},
 }
 
 event_db = [
     {'name': '평범한 하루', 'desc': '평화롭습니다.', 'effect': 'none'},
-    {'name': '간식 배달', 'desc': '사장님의 간식! (피로도 소모 감소)', 'effect': 'stamina_save'},
+    {'name': '간식 배달', 'desc': '사장님의 간식! (컨디션 회복)', 'effect': 'stamina_save'},
     {'name': '장비 고장', 'desc': '장비 이슈 발생. (전투력 감소)', 'effect': 'atk_down'},
     {'name': '팬미팅', 'desc': '응원 버프! (전투력 대폭 상승)', 'effect': 'atk_up'},
 ]
 
-# {event: 겪은 일, effect: 결과 멘트, mult: 데미지 배율}
 battle_events = [
     {"event": "화려한 고음을 질러", "effect": "음파 데미지가 폭발했습니다!", "mult": 1.5},
     {"event": "실수로 마이크를 떨어뜨렸지만", "effect": "오히려 적이 당황했습니다.", "mult": 2.0},
@@ -150,20 +141,43 @@ battle_events = [
 st.set_page_config(page_title="스텔라이브 매니저", page_icon="📅", layout="wide")
 
 
+def draw_new_characters(count=4):
+    """캐릭터를 랜덤하게 뽑아서 인벤토리에 추가"""
+    all_names = list(stellive_db.keys())
+    drawn_list = []
+
+    for _ in range(count):
+        pick = random.choice(all_names)
+        st.session_state['char_status'][pick]['count'] += 1
+        drawn_list.append(pick)
+
+    # 중복된 이름 정리
+    drawn_counter = Counter(drawn_list)
+    msg_list = [f"{k} x{v}" if v > 1 else k for k, v in drawn_counter.items()]
+
+    st.toast(f"🎁 멤버 영입! {', '.join(msg_list)}", icon="✨")
+
+
 def init_game():
     st.session_state['day'] = 1
     st.session_state['score'] = 0
     st.session_state['game_over'] = False
     st.session_state['game_phase'] = 'planning'
     st.session_state['battle_log'] = {}
-    st.session_state['char_status'] = {name: {'fatigue': 100, 'condition': 0} for name in stellive_db}
+
+    # [수정] 피로도(fatigue) 제거
+    st.session_state['char_status'] = {
+        name: {'condition': 0, 'count': 0, 'star': 1}
+        for name in stellive_db
+    }
+
     st.session_state['my_team'] = []
 
-    # 타이밍 게임 변수 (Attack Version)
     st.session_state['qte_state'] = 'READY'
     st.session_state['qte_start_time'] = 0
 
     generate_daily_environment()
+    draw_new_characters(4)
 
 
 def generate_daily_environment():
@@ -186,13 +200,30 @@ def generate_daily_environment():
 
 def toggle_member(name):
     team = st.session_state['my_team']
+    status = st.session_state['char_status'][name]
+
     if name in team:
         team.remove(name)
     else:
+        # [수정] 보유 여부만 체크, 피로도 체크 삭제
+        if status['count'] <= 0:
+            st.toast(f"🚫 {name} 멤버를 보유하고 있지 않습니다!", icon="🔒")
+            return
+
         if len(team) < 4:
             team.append(name)
         else:
             st.toast("🚫 파티는 최대 4명까지만 가능합니다!", icon="⚠️")
+
+
+def merge_member(name):
+    """3개를 소모하여 성급(Star)을 올림"""
+    status = st.session_state['char_status'][name]
+    if status['count'] >= 3:
+        status['count'] -= 3
+        status['star'] += 1
+        st.toast(f"🎉 {name} {status['star']}성으로 승급 완료! (능력치 상승)", icon="🆙")
+        st.rerun()
 
 
 def calculate_base_stats(team_list):
@@ -205,6 +236,14 @@ def calculate_base_stats(team_list):
         stat = st.session_state['char_status'][name]
         atk, hp = char['atk'], char['hp']
 
+        # 성급 보너스
+        star_multiplier = 1.0 + (stat['star'] - 1) * 0.5
+        atk = int(atk * star_multiplier)
+        hp = int(hp * star_multiplier)
+
+        if stat['star'] > 1:
+            logs.append(f"⭐ **{name}**: {stat['star']}성 보너스 (x{star_multiplier})")
+
         if stat['condition'] > 0:
             atk *= 1.2;
             hp *= 1.1
@@ -214,9 +253,7 @@ def calculate_base_stats(team_list):
             hp *= 0.9
             logs.append(f"🌧️ **{name}**: 날씨 디버프 (-20%)")
 
-        if stat['fatigue'] < 30:
-            atk *= 0.5
-            logs.append(f"😫 **{name}**: 지침 (공격력 -50%)")
+        # [수정] 피로도 페널티 삭제
 
         total_atk += atk;
         total_hp += hp
@@ -230,82 +267,59 @@ def calculate_base_stats(team_list):
 
     return int(total_atk), int(total_hp), logs
 
+
 # UI 렌더링용 도우미 함수 (카드 HTML 생성)
 def get_character_card_html(name, info, status, is_selected):
-    # 피로도 확인
-    fatigue = status['fatigue']
-    is_exhausted = fatigue <= 0
+    # [수정] 피로도 관련 변수 삭제
+    count = status['count']
+    star = status['star']
+
+    is_not_owned = count <= 0
 
     # 1. 배경/글자 색상 설정
-    if is_selected:
-        if is_exhausted:
-            # 선택되어 있는데 피로도 0 진한 빨강
-            bg_color = "#B91C1C"  # Dark Red
-            text_color = "white"
-            border_style = "2px solid #EF4444"
-            trait_bg = "rgba(255, 255, 255, 0.2)"
-        else:
-            # 팀편성되고, 선택 가능한 상태
-            bg_color = "#3C3CAC"
-            text_color = "white"
-            trait_bg = "rgba(255, 255, 255, 0.2)"
-            border_style = "2px solid #3B82F6"
+    if is_not_owned:
+        bg_color = "#F5F5F5"
+        text_color = "#AAAAAA"
+        border_style = "1px dashed #CCCCCC"
+        trait_bg = "#EEEEEE"
+    elif is_selected:
+        bg_color = "#3C3CAC"
+        text_color = "white"
+        trait_bg = "rgba(255, 255, 255, 0.2)"
+        border_style = "2px solid #3B82F6"
     else:
-        if is_exhausted:
-            #선택 안 됨 + 탈진 (선택 불가) -> 연한 빨강
-            bg_color = "#FEF2F2"  # Very Light Red
-            text_color = "#991B1B"  # Dark Red Text
-            border_style = "2px dashed #EF4444"  # 빨간 점선 테두리
-            trait_bg = "#FECACA"  # 붉은색 특성 배경
-        else:
-            # 팀편성되지 않고, 선택 가능 상태
-            bg_color = "#FFFFFF"
-            text_color = "black"
-            trait_bg = "#f0f2f6"
-            border_style = "1px solid #e0e0e0"
+        bg_color = "#FFFFFF"
+        text_color = "black"
+        trait_bg = "#f0f2f6"
+        border_style = "1px solid #e0e0e0"
 
-    # 2. 피로도 색상 설정
-    if fatigue >= 80: f_col = "#4CAF50" # Green
-    elif fatigue >= 40: f_col = "#FFC107" # Orange
-    elif fatigue > 0: f_col = "#FF5252"
-    else: f_col = "#991B1B" # Red
-
-    # 3. 특성 배지 HTML 생성
+    # 3. 특성 배지 HTML
     traits_html = ""
     for t in info['trait']:
         traits_html += f"<span style='display:inline-block; background:{trait_bg}; padding:2px 6px; margin:2px; border-radius:4px; font-size:11px;'>{t}</span>"
 
-    # 4. 최종 HTML 반환
-    opacity = "0.6" if (is_exhausted and not is_selected) else "1.0"
+    # 성급 표시 (⭐)
+    stars_html = "⭐" * star
 
+    # 보유 개수 표시 (x N)
+    count_badge = ""
+    if count > 0:
+        count_color = "#555" if not is_selected else "white"
+        count_badge = f"<div style='margin-top:5px; font-weight:bold; font-size:14px; color:{count_color};'>x {count}</div>"
+
+    opacity = "0.6" if is_not_owned else "1.0"
+
+    # [수정] HP(피로도) 표시 줄 삭제
     return f"""
-    <div style="border:{border_style}; background-color:{bg_color}; color:{text_color}; padding:12px 5px; border-radius:12px; margin-bottom:10px; text-align:center; height:100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <div style="border:{border_style}; background-color:{bg_color}; color:{text_color}; padding:12px 5px; border-radius:12px; margin-bottom:10px; text-align:center; height:100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); opacity: {opacity};">
+        <div style="font-size:12px; margin-bottom:2px;">{stars_html}</div>
         <div style="font-weight:bold; font-size:18px; margin-bottom:8px;">{name}</div>
         <div style="margin-bottom:10px; line-height:1.4;">{traits_html}</div>
         <div style="font-size:12px; opacity:0.8; margin-bottom: 5px;">{info['desc']}</div>
-        <div style="font-weight:bold; color:{f_col}; font-size:13px;">피로도 {fatigue}</div>
+        {count_badge}
     </div>
     """
 
-def toggle_member(name):
-    team = st.session_state['my_team']
-    status = st.session_state['char_status'][name]  # 캐릭터 상태 가져오기
-
-    if name in team:
-        # [제외는 언제나 가능]
-        team.remove(name)
-    else:
-        # [추가 시 검사 로직]
-        # 1. 피로도 체크: 0 이하면 추가 불가
-        if status['fatigue'] <= 0:
-            st.toast(f"🚫 {name}님은 탈진 상태(HP 0)라 선택할 수 없습니다! 휴식이 필요합니다.", icon="🏥")
-            return  # 함수 강제 종료 (추가 안 됨)
-
-        # 2. 인원수 체크
-        if len(team) < 4:
-            team.append(name)
-        else:
-            st.toast("🚫 파티는 최대 4명까지만 가능합니다!", icon="⚠️")
 
 def process_battle_start(team_list):
     atk, hp, logs = calculate_base_stats(team_list)
@@ -319,15 +333,12 @@ def process_battle_start(team_list):
         'monster': current_monster, 'monster_hp': monster_hp, 'monster_atk': monster_atk
     }
 
-    # 1. 팀원들의 모든 특성을 하나의 리스트로 모으기
     all_traits = []
     for name in team_list:
         all_traits.extend(stellive_db[name]['trait'])
 
-    # 2. 특성별 개수 세기
     trait_counts = Counter(all_traits)
 
-    # 3. 2개 이상 겹치는 특성이 있는지 확인
     synergy_trait = None
     for trait, count in trait_counts.items():
         if count >= 2 and trait in QTE_TRIGGER_TRAITS:
@@ -335,80 +346,64 @@ def process_battle_start(team_list):
             break
 
     if synergy_trait:
-        # 시너지 있음 -> QTE(미니게임) 발동!
-        st.session_state['synergy_name'] = synergy_trait  # UI에 보여주기 위해 저장
+        st.session_state['synergy_name'] = synergy_trait
         st.toast(f"✨ '{synergy_trait}' 특성 공명 발동! 연계 공격 기회!", icon="⚔️")
-
         st.session_state['qte_state'] = 'READY'
         st.session_state['game_phase'] = 'attack_minigame'
         st.rerun()
     else:
-        # 시너지 없음 -> 미니게임 없이 일반 공격 (배율 1.0)
         st.session_state['game_phase'] = 'calculating'
-        # if any(c >= 2 for c in trait_counts.values()):
-        #     st.toast("시너지가 발생했지만 전투 특성이 아닙니다. 일반 공격으로 전환합니다.", icon="💬")
-        # else:
-        #     st.toast("발동된 시너지가 없습니다.", icon="☁️")
-
         st.rerun()
 
 
 def finalize_battle(multiplier, reaction_time):
     temp = st.session_state['battle_temp']
-
-    # [MODIFIED] 개별 전투 로그 생성을 위한 로직 변경
     team_list = st.session_state['my_team']
 
     total_atk = 0
-    detailed_logs = []  # 여기에 HTML 스타일이 적용된 로그가 저장됩니다.
+    detailed_logs = []
 
-    # 1. 각 멤버별로 전투 시뮬레이션 진행
     for name in team_list:
         char_info = stellive_db[name]
         status = st.session_state['char_status'][name]
 
-        # 기본 공격력 계산
-        base_atk = char_info['atk']
+        # 성급 보너스 반영
+        star_multiplier = 1.0 + (status['star'] - 1) * 0.5
+        base_atk = int(char_info['atk'] * star_multiplier)
+
         if status['condition'] > 0:
             base_atk *= 1.2
         elif status['condition'] < 0:
             base_atk *= 0.8
-        if status['fatigue'] < 30: base_atk *= 0.5
 
-        # 랜덤 이벤트 뽑기
+        # [수정] 피로도 페널티 삭제
+
         action = random.choice(battle_events)
-        mult = action['mult']  # 현재 이벤트의 배율
+        mult = action['mult']
 
-        # 최종 데미지 계산
         final_char_atk = int(base_atk * mult * multiplier)
         total_atk += final_char_atk
 
-        # [NEW] 배율에 따른 동적 스타일링 로직
         if mult > 1.2:
-            # 대성공 (배율이 1.2 초과): 크고 주황색, 강조됨
             style = "font-size: 1.2em; color: #ff8c00; font-weight: bold; padding: 5px;"
             prefix = "💥 SUPER:"
         elif mult < 1.0:
-            # 실패/패널티 (배율이 1.0 미만): 작고 회색, 힘빠짐
             style = "font-size: 0.9em; color: #808080; font-style: italic; padding: 2px;"
             prefix = "💧 BAD:"
         else:
-            # 평타 (1.0 ~ 1.2): 기본 스타일
             style = "font-size: 1.0em; color: #ffffff; padding: 3px;"
             prefix = "NORMAL:"
 
-        # HTML 태그로 감싼 로그 메시지 생성
+        star_str = "⭐" * status['star']
         log_msg = f"""
         <div style="{style} margin-bottom: 5px;">
-            {prefix} <b>{name}</b> 이(가) {action['event']}, {action['effect']} (DMG: {final_char_atk})
+            {prefix} <b>{name}{star_str}</b> 이(가) {action['event']}, {action['effect']} (DMG: {final_char_atk})
         </div>
         """
         detailed_logs.append(log_msg)
 
-    # 2. 몬스터 체력 및 결과 계산
     remaining_monster_hp = temp['monster_hp'] - total_atk
 
-    # QTE 결과 메시지
     crit_log = ""
     if multiplier >= 2.0:
         crit_log = f"⚡ **PERFECT QTE!** (반응: {reaction_time:.3f}초) 전체 데미지 2배 적용!"
@@ -417,7 +412,6 @@ def finalize_battle(multiplier, reaction_time):
     else:
         crit_log = f"💨 **NORMAL QTE** (반응: {reaction_time:.3f}초) 기본 데미지로 공격."
 
-    # 승패 판정
     win = False
     result_msg = ""
     final_hp = temp['hp']
@@ -436,39 +430,24 @@ def finalize_battle(multiplier, reaction_time):
         else:
             win, result_msg = False, "FAIL"
 
-    # 5. 결과 저장
     st.session_state['battle_log'] = {
         'atk': total_atk, 'hp': final_hp,
         'monster_hp': remaining_monster_hp,
         'logs': temp['logs'],
-        'detailed_logs': detailed_logs,  # HTML 로그 저장
+        'detailed_logs': detailed_logs,
         'crit_log': crit_log,
         'counter_log': counter_log,
         'win': win, 'result_msg': result_msg,
         'team': team_list, 'monster': temp['monster']
     }
 
-    # 애니메이션 상태 초기화
     st.session_state['log_animated'] = False
-
     st.session_state['game_phase'] = 'result'
     st.rerun()
 
 
 def end_day():
-    team_list = st.session_state['battle_log']['team']
     win = st.session_state['battle_log']['win']
-
-    cost = 30
-    if st.session_state['today_weather']['name'] == '태풍': cost = 50
-    if st.session_state['today_event']['effect'] == 'stamina_save': cost = 10
-
-    for name in stellive_db:
-        status = st.session_state['char_status'][name]
-        if name in team_list:
-            status['fatigue'] = max(0, status['fatigue'] - cost)
-        else:
-            status['fatigue'] = min(100, status['fatigue'] + 20)
 
     if win: st.session_state['score'] += 100 * st.session_state['day']
     st.session_state['day'] += 1
@@ -477,6 +456,8 @@ def end_day():
         st.session_state['game_over'] = True
     else:
         generate_daily_environment()
+        # 다음 날 멤버 뽑기
+        draw_new_characters(4)
 
     st.session_state['game_phase'] = 'planning'
     st.rerun()
@@ -537,11 +518,9 @@ if st.session_state['game_phase'] == 'planning':
             if i < len(my_team):
                 char_name = my_team[i]
                 char_info = stellive_db[char_name]
-                status = st.session_state['char_status'][char_name]  # status 가져오기
+                status = st.session_state['char_status'][char_name]
 
-                # [개선] 함수 호출로 대체!
-                card_html = get_character_card_html(char_name, char_info, status, True)  # True는 선택됨 의미
-
+                card_html = get_character_card_html(char_name, char_info, status, True)
                 st.markdown(card_html, unsafe_allow_html=True)
 
                 if st.button("제외", key=f"remove_{i}", use_container_width=True):
@@ -553,17 +532,14 @@ if st.session_state['game_phase'] == 'planning':
                     unsafe_allow_html=True)
 
     if len(my_team) > 0:
-        st.write("")  # 여백
+        st.write("")
 
-        # 1. 현재 팀의 모든 특성 수집
         current_traits = []
         for name in my_team:
             current_traits.extend(stellive_db[name]['trait'])
 
-        # 2. 개수 세기
         trait_counts = Counter(current_traits)
 
-        # 3. 발동된 시너지 필터링
         active_synergies = []
         possible_synergies = []
 
@@ -573,15 +549,12 @@ if st.session_state['game_phase'] == 'planning':
             else:
                 possible_synergies.append(trait)
 
-        # 4. UI 렌더링
         with st.container(border=True):
             st.markdown("##### 🔗 현재 발동 시너지")
 
             if not active_synergies:
                 st.caption("아직 발동된 시너지가 없습니다. 같은 특성을 가진 멤버를 배치해보세요!")
             else:
-                # 시너지 배지를 가로로 나열
-                # [수정] columns 개수를 유동적으로 조절하여 가로 배치 최적화
                 syn_cols = st.columns(len(active_synergies))
 
                 for idx, (trait, count) in enumerate(active_synergies):
@@ -604,40 +577,25 @@ if st.session_state['game_phase'] == 'planning':
                             </div>
                             """, unsafe_allow_html=True)
 
-            # 힌트 (여백이 남을 때만 표시)
             if possible_synergies and len(my_team) < 4:
                 st.write("")
                 st.caption(f"💡 힌트: **{', '.join(possible_synergies[:3])}** 등을 더 모아보세요!")
 
-    exhausted_members = []
-    for m_name in my_team:
-        if st.session_state['char_status'][m_name]['fatigue'] <= 0:
-            exhausted_members.append(m_name)
+    # [수정] 탈진 멤버 체크 로직 삭제
 
     btn_disabled = len(my_team) != 4
 
     if st.button("🔥 전투 출격 (MISSION START)", type="primary", use_container_width=True, disabled=btn_disabled):
-        if len(exhausted_members) > 0:
-            # [차단] 탈진 멤버가 있으면 경고 메시지 출력하고 함수 실행 안 함
-            st.error(f"🚫 출격 불가! 다음 멤버의 피로도가 0입니다: {', '.join(exhausted_members)}")
-            st.toast("팀원을 교체하거나 휴식을 취해야 합니다.", icon="🏥")
-        else:
-            # [통과] 모두 건강하면 전투 시작
-            process_battle_start(my_team)
+        process_battle_start(my_team)
 
     st.divider()
 
     # 대기실
     st.subheader("👥 대기실 (멤버 선택)")
-    tab_titles = ["ALL", "1기생", "2기생", "3기생","사장/기타"]
+    tab_titles = ["ALL", "1기생", "2기생", "3기생", "사장/기타"]
     tabs = st.tabs(tab_titles)
 
-    filter_groups = {"ALL": None,
-                     "1기생": "1기생",
-                     "2기생": "2기생",
-                     "3기생": "3기생",
-                     "사장/기타": "사장"
-                     }
+    filter_groups = {"ALL": None, "1기생": "1기생", "2기생": "2기생", "3기생": "3기생", "사장/기타": "사장"}
 
     for tab, title in zip(tabs, tab_titles):
         with tab:
@@ -652,52 +610,33 @@ if st.session_state['game_phase'] == 'planning':
                         if info.get('group', '기타') != target_group: continue
 
                 status = st.session_state['char_status'][name]
-                fatigue = status['fatigue']
                 is_selected = name in my_team
-                border_style = "2px solid #3B82F6" if is_selected else "1px solid #e0e0e0"
-
-                # [색상 로직]
-                if is_selected:
-                    bg_color = "#3C3CAC"
-                    text_color = "white"
-                    trait_bg = "rgba(255, 255, 255, 0.2)"  # 선택됐을 땐 반투명 흰색 배경
-                else:
-                    bg_color = "#FFFFFF"
-                    text_color = "black"
-                    trait_bg = "#f0f2f6"  # 평소엔 회색 배경
+                is_owned = status['count'] > 0
 
                 btn_label = "해제" if is_selected else "선택"
                 btn_type = "secondary" if is_selected else "primary"
 
-                # 피로도 색상
-                if fatigue >= 80:
-                    f_col = "#4CAF50"  # Green
-                elif fatigue >= 40:
-                    f_col = "#FFC107"  # Orange
-                else:
-                    f_col = "#FF5252"  # Red
-
-                # [핵심 변경] 특성을 HTML 태그로 감싸서 '배지' 형태로 만듦
-                traits_html = ""
-                for t in info['trait']:
-                    # 특성 하나하나를 둥근 네모 박스에 넣음
-                    traits_html += f"<span style='display:inline-block; background:{trait_bg}; padding:2px 6px; margin:2px; border-radius:4px; font-size:11px;'>{t}</span>"
+                if not is_owned:
+                    btn_label = "미보유"
 
                 with row_cols[idx % 4]:
-                    # [개선] 함수 호출로 대체!
                     card_html = get_character_card_html(name, info, status, is_selected)
-
                     st.markdown(card_html, unsafe_allow_html=True)
 
-                    if st.button(btn_label, key=f"btn_{title}_{name}", type=btn_type, use_container_width=True):
+                    if st.button(btn_label, key=f"btn_{title}_{name}", type=btn_type, use_container_width=True,
+                                 disabled=not is_owned):
                         toggle_member(name)
                         st.rerun()
+
+                    if status['count'] >= 3:
+                        if st.button(f"⬆️ MERGE (3개 소모)", key=f"merge_{title}_{name}", type="primary",
+                                     use_container_width=True):
+                            merge_member(name)
                 idx += 1
 
 # --- [Phase 1.5: 공격 타이밍 미니게임] ---
 elif st.session_state['game_phase'] == 'attack_minigame':
 
-    # [MODIFIED] 어떤 시너지가 발동했는지 표시
     synergy = st.session_state.get('synergy_name', '알 수 없음')
 
     st.markdown(f"## ⚔️ '{synergy}' 특성 연계 공격 발동!")
@@ -709,7 +648,6 @@ elif st.session_state['game_phase'] == 'attack_minigame':
     with col_center:
         placeholder = st.empty()
 
-        # [단계 1] 에너지 충전 (READY)
         if st.session_state['qte_state'] == 'READY':
             with placeholder.container():
                 st.info("파티원들이 자세를 잡습니다...")
@@ -719,7 +657,6 @@ elif st.session_state['game_phase'] == 'attack_minigame':
                     st.session_state['qte_state'] = 'WAITING'
                     st.rerun()
 
-        # [단계 2] 눈치 게임 (WAITING)
         elif st.session_state['qte_state'] == 'WAITING':
             with placeholder.container():
                 st.warning("기회를 노리는 중...")
@@ -731,7 +668,6 @@ elif st.session_state['game_phase'] == 'attack_minigame':
                 st.session_state['qte_state'] = 'ACTION'
                 st.rerun()
 
-        # [단계 3] 발사 (ACTION)
         elif st.session_state['qte_state'] == 'ACTION':
             with placeholder.container():
                 st.error("지금이야!!! 발사!!!")
@@ -751,13 +687,11 @@ elif st.session_state['game_phase'] == 'attack_minigame':
 
                     finalize_battle(multiplier, reaction)
 
-# [화면 전환용 단계]
-# 대기실 -> 결과 화면 전환 방식 통일
 elif st.session_state['game_phase'] == 'calculating':
     st.markdown("## ⚔️ 일반 공격 준비")
     st.info("특별한 시너지가 발견되지 않았습니다. 기본 전술로 공격을 수행합니다.")
 
-    st.write("")  # 여백
+    st.write("")
     st.write("")
 
     col_spacer1, col_center, col_spacer2 = st.columns([1, 2, 1])
@@ -765,9 +699,7 @@ elif st.session_state['game_phase'] == 'calculating':
     with col_center:
         st.markdown("<h3 style='text-align:center;'>명령 대기 중...</h3>", unsafe_allow_html=True)
 
-        # 유저가 직접 눌러야 넘어감
         if st.button("⚔️ 공격 개시 (ENGAGE)", type="primary", use_container_width=True):
-            # 일반 공격이므로 배율 1.0, 반응속도 0.0으로 처리
             finalize_battle(1.0, 0.0)
     pass
 
@@ -777,36 +709,28 @@ elif st.session_state['game_phase'] == 'result':
     log = st.session_state['battle_log']
     monster = log['monster']
 
-    # [MODIFIED] 타자기 효과 + HTML 스타일링 적용
     with st.container(border=True):
         st.markdown("### ⚔️ 전투 상세 기록")
         st.info(log['crit_log'])
 
-        # 1. 애니메이션 출력 (타자기 효과)
         if not st.session_state.get('log_animated', False):
             placeholder = st.empty()
             accumulated_logs = []
 
             for line in log['detailed_logs']:
                 accumulated_logs.append(line)
-                # [중요] HTML 태그가 포함되어 있으므로 unsafe_allow_html=True 필수
                 placeholder.markdown("".join(accumulated_logs), unsafe_allow_html=True)
-                time.sleep(0.5)  # 속도 조절
+                time.sleep(0.5)
 
             st.session_state['log_animated'] = True
-
-        # 2. 정적 출력 (깜빡임 방지)
         else:
             for line in log['detailed_logs']:
-                # 여기도 마찬가지로 HTML 허용
                 st.markdown(line, unsafe_allow_html=True)
 
     st.divider()
 
-    # (이 아래 승패 결과, 스탯 표시 등 나머지 코드는 기존과 동일하게 유지)
     if log['result_msg'] == 'SUCCESS':
         st.success("🎉 작전 성공! 적을 물리쳤습니다.")
-        #st.balloons()
     elif log['result_msg'] == 'DRAW':
         st.warning("⚠️ 작전 무승부. 적을 처치하진 못했지만 생존했습니다.")
     else:
@@ -827,11 +751,7 @@ elif st.session_state['game_phase'] == 'result':
 
     st.write("---")
 
-    cost = 30
-    if st.session_state['today_weather']['name'] == '태풍': cost = 50
-    if st.session_state['today_event']['effect'] == 'stamina_save': cost = 10
-
-    st.info(f"💡 **피로도 정산:** 전투 참여 멤버 -{cost} / 휴식 멤버 +20")
+    # [수정] 피로도 정산 메시지 삭제
 
     if st.button("🌙 하루 마무리 (다음날로 이동)", type="primary"):
         end_day()
