@@ -9,17 +9,24 @@ from collections import Counter
 QTE_TRIGGER_TRAITS = ['🐲 용', '🎧 전설', '👑 보스', '🪐 이세계']
 stellive_db = {
     # 1기생
+    '아이리 칸나': {
+        'group': '1기생',
+        'trait': ['💎 신화', '🐲 용', '💃 무희'],
+        'atk': 95,
+        'desc': '노래로 적을 제압',
+        'color': '#3B82F6', 'type': 'outdoor'
+    },
     '아야츠노 유니': {
         'group': '1기생',
         'trait': ['✨ 전설', '🦄 동물', '💃 무희'],
-        'atk': 50, 'hp': 85,
+        'atk': 50,
         'desc': '어그로 담당',
         'color': '#F472B6', 'type': 'outdoor'
     },
     '사키하네 후야': {
         'group': '1기생',
-        'trait': ['✨ 전설', '용', '🛡️ 탱커'],
-        'atk': 50, 'hp': 85,
+        'trait': ['✨ 전설', '🐲 용', '🛡️ 탱커'],
+        'atk': 50,
         'desc': '다시태어난마룡',
         'color': '#F472B6', 'type': 'indoor'
     },
@@ -28,7 +35,7 @@ stellive_db = {
     '시라유키 히나': {
         'group': '2기생',
         'trait': ['🏙️ 현대', '👤 인간', '🎤 가희'],
-        'icon': '🎧', 'atk': 85, 'hp': 50,
+        'icon': '🎧', 'atk': 85,
         'desc': 'SIUUUUU',
         'color': '#A855F7', 'type': 'outdoor'
     },
@@ -36,21 +43,21 @@ stellive_db = {
     '네네코 마시로': {
         'group': '2기생',
         'trait': ['🌌 우주', '🦄 동물', '🎤 가희'],
-        'atk': 30, 'hp': 90,
+        'atk': 30,
         'desc': '밍',
         'color': '#FCD34D', 'type': 'indoor'
     },
     '아카네 리제': {
         'group': '2기생',
         'trait': ['✨ 전설', '🧛 뱀파이어', '💃 무희'],
-        'atk': 88, 'hp': 70,
+        'atk': 88,
         'desc': '강력한 파괴력',
         'color': '#EF4444', 'type': 'indoor'
     },
     '아라하시 타비': {
         'group': '2기생',
         'trait': ['🪐 이세계', '👤 인간', '🛡️ 탱커'],
-        'atk': 60, 'hp': 80,
+        'atk': 60,
         'desc': '기적의 용사',
         'color': '#06B6D4', 'type': 'outdoor'
     },
@@ -59,32 +66,32 @@ stellive_db = {
     '텐코 시부키': {
         'group': '3기생',
         'trait': ['✨ 전설', '🦄 동물', '💃 무희'],
-        'atk': 60, 'hp': 80,
-        'desc': '기적의 용사',
+        'atk': 60,
+        'desc': '여우신',
         'color': '#06B6D4', 'type': 'outdoor'
     },
 
     '하나코 나나': {
         'group': '3기생',
         'trait': ['🏙️ 현대', '👤 인간', '🎤 가희'],
-        'atk': 60, 'hp': 80,
-        'desc': '기적의 용사',
+        'atk': 60,
+        'desc': '다시 태어난 요원',
         'color': '#06B6D4', 'type': 'outdoor'
     },
 
     '유즈하 리코': {
         'group': '3기생',
         'trait': ['🪐 이세계', '👤 인간', '🎤 가희'],
-        'atk': 60, 'hp': 80,
-        'desc': '기적의 용사',
+        'atk': 60,
+        'desc': '하이용사',
         'color': '#06B6D4', 'type': 'outdoor'
     },
 
     '아오쿠모 린': {
         'group': '3기생',
         'trait': ['🏙️ 현대', '👤 인간', '🛡️ 탱커'],
-        'atk': 60, 'hp': 80,
-        'desc': '기적의 용사',
+        'atk': 60,
+        'desc': '뇨',
         'color': '#06B6D4', 'type': 'outdoor'
     },
 
@@ -92,30 +99,30 @@ stellive_db = {
     '강지': {
         'group': '사장',
         'trait': ['👑 보스', '🎤 가희'],
-        'atk': 99, 'hp': 99,
+        'atk': 99,
         'desc': '별의 주인',
         'color': '#111827',
         'type': 'outdoor'},
 }
 
 monster_db = [
-    {"name": "악플러 군단", "hp_base": 300, "atk_base": 80, "icon": "😈", "desc": "멘탈 공격을 합니다."},
-    {"name": "저작권 경찰", "hp_base": 500, "atk_base": 120, "icon": "👮‍♂️", "desc": "매우 단단하고 아픕니다."},
-    {"name": "방송 송출 오류", "hp_base": 350, "atk_base": 100, "icon": "📺", "desc": "기습적인 공격을 합니다."},
-    {"name": "월요일 아침", "hp_base": 800, "atk_base": 150, "icon": "📅", "desc": "직장인의 주적."},
-    {"name": "대규모 업데이트", "hp_base": 1000, "atk_base": 200, "icon": "🔥", "desc": "버그가 속출합니다."},
+    {"name": "허수아비 (Tutorial)", "target_score": 500, "icon": "🎯", "desc": "가볍게 몸을 풀어봅시다."},
+    {"name": "악플러 군단", "target_score": 1000, "icon": "😈", "desc": "얼마나 세게 때릴 수 있을까요?"},
+    {"name": "저작권 경찰", "target_score": 1500, "icon": "👮‍♂️", "desc": "매우 단단합니다. 고득점을 노리세요."},
+    {"name": "월요일 아침", "target_score": 2500, "icon": "📅", "desc": "직장인의 주적. 전력을 다하세요."},
+    {"name": "레이드 보스", "target_score": 4000, "icon": "🔥", "desc": "최고 기록에 도전하세요!"},
 ]
 
 weather_db = {
     '맑음': {'icon': '☀️', 'desc': '야외 활동하기 좋습니다.', 'buff': 'outdoor', 'debuff': 'indoor'},
     '비': {'icon': '☔', 'desc': '집에서 게임하기 좋습니다.', 'buff': 'indoor', 'debuff': 'outdoor'},
-    '태풍': {'icon': '🌪️', 'desc': '전투 난이도 증가!', 'buff': None, 'debuff': 'all'},
+    '태풍': {'icon': '🌪️', 'desc': '날씨가 험합니다.', 'buff': None, 'debuff': 'all'},
     '오로라': {'icon': '🌌', 'desc': '모두의 컨디션 상승.', 'buff': 'all', 'debuff': None},
 }
 
 event_db = [
     {'name': '평범한 하루', 'desc': '평화롭습니다.', 'effect': 'none'},
-    {'name': '간식 배달', 'desc': '사장님의 간식! (컨디션 회복)', 'effect': 'stamina_save'},
+    {'name': '간식 배달', 'desc': '사장님의 간식!', 'effect': 'stamina_save'},
     {'name': '장비 고장', 'desc': '장비 이슈 발생. (전투력 감소)', 'effect': 'atk_down'},
     {'name': '팬미팅', 'desc': '응원 버프! (전투력 대폭 상승)', 'effect': 'atk_up'},
 ]
@@ -138,11 +145,11 @@ battle_events = [
 # 2. 게임 로직 (Logic Layer)
 # ==========================================
 
-st.set_page_config(page_title="스텔라이브 매니저", page_icon="📅", layout="wide")
+st.set_page_config(page_title="스텔라이브 스코어 어택", page_icon="🏆", layout="wide")
 
 
 def draw_new_characters(count=4):
-    """캐릭터를 랜덤하게 뽑아서 인벤토리에 추가"""
+    """(2일차 이후) 캐릭터를 랜덤하게 뽑아서 인벤토리에 추가 (중복 가능)"""
     all_names = list(stellive_db.keys())
     drawn_list = []
 
@@ -151,7 +158,6 @@ def draw_new_characters(count=4):
         st.session_state['char_status'][pick]['count'] += 1
         drawn_list.append(pick)
 
-    # 중복된 이름 정리
     drawn_counter = Counter(drawn_list)
     msg_list = [f"{k} x{v}" if v > 1 else k for k, v in drawn_counter.items()]
 
@@ -160,24 +166,26 @@ def draw_new_characters(count=4):
 
 def init_game():
     st.session_state['day'] = 1
-    st.session_state['score'] = 0
+    st.session_state['total_score'] = 0
     st.session_state['game_over'] = False
-    st.session_state['game_phase'] = 'planning'
+
+    # [변경] 초기 페이즈를 'starter_selection'으로 설정
+    st.session_state['game_phase'] = 'starter_selection'
     st.session_state['battle_log'] = {}
 
-    # [수정] 피로도(fatigue) 제거
     st.session_state['char_status'] = {
         name: {'condition': 0, 'count': 0, 'star': 1}
         for name in stellive_db
     }
 
     st.session_state['my_team'] = []
-
     st.session_state['qte_state'] = 'READY'
     st.session_state['qte_start_time'] = 0
 
+    # 스타팅 멤버 후보 3명 미리 추첨
+    st.session_state['starter_candidates'] = random.sample(list(stellive_db.keys()), 3)
+
     generate_daily_environment()
-    draw_new_characters(4)
 
 
 def generate_daily_environment():
@@ -205,7 +213,6 @@ def toggle_member(name):
     if name in team:
         team.remove(name)
     else:
-        # [수정] 보유 여부만 체크, 피로도 체크 삭제
         if status['count'] <= 0:
             st.toast(f"🚫 {name} 멤버를 보유하고 있지 않습니다!", icon="🔒")
             return
@@ -222,86 +229,68 @@ def merge_member(name):
     if status['count'] >= 3:
         status['count'] -= 3
         status['star'] += 1
-        st.toast(f"🎉 {name} {status['star']}성으로 승급 완료! (능력치 상승)", icon="🆙")
+        st.toast(f"🎉 {name} {status['star']}성으로 승급 완료! (공격력 대폭 상승)", icon="🆙")
         st.rerun()
 
 
 def calculate_base_stats(team_list):
-    total_atk, total_hp = 0, 0
+    total_atk = 0
     logs = []
     event = st.session_state['today_event']
 
     for name in team_list:
         char = stellive_db[name]
         stat = st.session_state['char_status'][name]
-        atk, hp = char['atk'], char['hp']
+        atk = char['atk']
 
-        # 성급 보너스
         star_multiplier = 1.0 + (stat['star'] - 1) * 0.5
         atk = int(atk * star_multiplier)
-        hp = int(hp * star_multiplier)
 
         if stat['star'] > 1:
-            logs.append(f"⭐ **{name}**: {stat['star']}성 보너스 (x{star_multiplier})")
+            logs.append(f"⭐ **{name}**: {stat['star']}성 위력 (x{star_multiplier})")
 
         if stat['condition'] > 0:
-            atk *= 1.2;
-            hp *= 1.1
+            atk *= 1.2
             logs.append(f"🙂 **{name}**: 날씨 버프 (+20%)")
         elif stat['condition'] < 0:
-            atk *= 0.8;
-            hp *= 0.9
+            atk *= 0.8
             logs.append(f"🌧️ **{name}**: 날씨 디버프 (-20%)")
 
-        # [수정] 피로도 페널티 삭제
-
-        total_atk += atk;
-        total_hp += hp
+        total_atk += atk
 
     if event['effect'] == 'atk_up':
-        total_atk *= 1.3;
+        total_atk *= 1.3
         logs.append(f"🔥 이벤트 버프 (+30%)")
     elif event['effect'] == 'atk_down':
         total_atk *= 0.8;
         logs.append(f"📉 이벤트 디버프 (-20%)")
 
-    return int(total_atk), int(total_hp), logs
+    return int(total_atk), logs
 
 
-# UI 렌더링용 도우미 함수 (카드 HTML 생성)
 def get_character_card_html(name, info, status, is_selected):
-    # [수정] 피로도 관련 변수 삭제
     count = status['count']
     star = status['star']
-
     is_not_owned = count <= 0
 
-    # 1. 배경/글자 색상 설정
     if is_not_owned:
-        bg_color = "#F5F5F5"
-        text_color = "#AAAAAA"
+        bg_color, text_color = "#F5F5F5", "#AAAAAA"
         border_style = "1px dashed #CCCCCC"
         trait_bg = "#EEEEEE"
     elif is_selected:
-        bg_color = "#3C3CAC"
-        text_color = "white"
+        bg_color, text_color = "#3C3CAC", "white"
         trait_bg = "rgba(255, 255, 255, 0.2)"
         border_style = "2px solid #3B82F6"
     else:
-        bg_color = "#FFFFFF"
-        text_color = "black"
+        bg_color, text_color = "#FFFFFF", "black"
         trait_bg = "#f0f2f6"
         border_style = "1px solid #e0e0e0"
 
-    # 3. 특성 배지 HTML
     traits_html = ""
     for t in info['trait']:
         traits_html += f"<span style='display:inline-block; background:{trait_bg}; padding:2px 6px; margin:2px; border-radius:4px; font-size:11px;'>{t}</span>"
 
-    # 성급 표시 (⭐)
     stars_html = "⭐" * star
-
-    # 보유 개수 표시 (x N)
     count_badge = ""
     if count > 0:
         count_color = "#555" if not is_selected else "white"
@@ -309,7 +298,6 @@ def get_character_card_html(name, info, status, is_selected):
 
     opacity = "0.6" if is_not_owned else "1.0"
 
-    # [수정] HP(피로도) 표시 줄 삭제
     return f"""
     <div style="border:{border_style}; background-color:{bg_color}; color:{text_color}; padding:12px 5px; border-radius:12px; margin-bottom:10px; text-align:center; height:100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); opacity: {opacity};">
         <div style="font-size:12px; margin-bottom:2px;">{stars_html}</div>
@@ -322,15 +310,16 @@ def get_character_card_html(name, info, status, is_selected):
 
 
 def process_battle_start(team_list):
-    atk, hp, logs = calculate_base_stats(team_list)
+    atk, logs = calculate_base_stats(team_list)
 
     current_monster = monster_db[(st.session_state['day'] - 1) % len(monster_db)]
-    monster_hp = current_monster['hp_base'] + (st.session_state['day'] * 50)
-    monster_atk = current_monster.get('atk_base', 100) + (st.session_state['day'] * 20)
+    target_score = current_monster['target_score']
 
     st.session_state['battle_temp'] = {
-        'base_atk': atk, 'hp': hp, 'logs': logs,
-        'monster': current_monster, 'monster_hp': monster_hp, 'monster_atk': monster_atk
+        'base_atk': atk,
+        'logs': logs,
+        'monster': current_monster,
+        'target_score': target_score
     }
 
     all_traits = []
@@ -360,14 +349,13 @@ def finalize_battle(multiplier, reaction_time):
     temp = st.session_state['battle_temp']
     team_list = st.session_state['my_team']
 
-    total_atk = 0
+    total_damage = 0
     detailed_logs = []
 
     for name in team_list:
         char_info = stellive_db[name]
         status = st.session_state['char_status'][name]
 
-        # 성급 보너스 반영
         star_multiplier = 1.0 + (status['star'] - 1) * 0.5
         base_atk = int(char_info['atk'] * star_multiplier)
 
@@ -376,69 +364,66 @@ def finalize_battle(multiplier, reaction_time):
         elif status['condition'] < 0:
             base_atk *= 0.8
 
-        # [수정] 피로도 페널티 삭제
-
         action = random.choice(battle_events)
         mult = action['mult']
-
         final_char_atk = int(base_atk * mult * multiplier)
-        total_atk += final_char_atk
+
+        total_damage += final_char_atk
 
         if mult > 1.2:
             style = "font-size: 1.2em; color: #ff8c00; font-weight: bold; padding: 5px;"
-            prefix = "💥 SUPER:"
+            prefix = "💥 CRITICAL:"
         elif mult < 1.0:
             style = "font-size: 0.9em; color: #808080; font-style: italic; padding: 2px;"
-            prefix = "💧 BAD:"
+            prefix = "💧 WEAK:"
         else:
             style = "font-size: 1.0em; color: #ffffff; padding: 3px;"
-            prefix = "NORMAL:"
+            prefix = "HIT:"
 
         star_str = "⭐" * status['star']
         log_msg = f"""
         <div style="{style} margin-bottom: 5px;">
-            {prefix} <b>{name}{star_str}</b> 이(가) {action['event']}, {action['effect']} (DMG: {final_char_atk})
+            {prefix} <b>{name}{star_str}</b>: {action['effect']} (DMG: {final_char_atk})
         </div>
         """
         detailed_logs.append(log_msg)
 
-    remaining_monster_hp = temp['monster_hp'] - total_atk
+    st.session_state['total_score'] += total_damage
+
+    target_score = temp['target_score']
+    ratio = (total_damage / target_score) * 100
+
+    grade = "C"
+    if ratio >= 200:
+        grade = "SSS"
+    elif ratio >= 150:
+        grade = "SS"
+    elif ratio >= 120:
+        grade = "S"
+    elif ratio >= 100:
+        grade = "A"
+    elif ratio >= 80:
+        grade = "B"
+
+    grade_color = "#FFD700" if "S" in grade else "#FFFFFF"
+    result_msg = f"<h2 style='color:{grade_color}; text-align:center;'>GRADE: {grade}</h2>"
 
     crit_log = ""
     if multiplier >= 2.0:
-        crit_log = f"⚡ **PERFECT QTE!** (반응: {reaction_time:.3f}초) 전체 데미지 2배 적용!"
+        crit_log = f"⚡ **PERFECT QTE!** (반응: {reaction_time:.3f}초) 데미지 2배!"
     elif multiplier > 1.0:
-        crit_log = f"✨ **GREAT QTE!** (반응: {reaction_time:.3f}초) 전체 데미지 1.2배 적용!"
-    else:
-        crit_log = f"💨 **NORMAL QTE** (반응: {reaction_time:.3f}초) 기본 데미지로 공격."
-
-    win = False
-    result_msg = ""
-    final_hp = temp['hp']
-    counter_log = ""
-
-    if remaining_monster_hp <= 0:
-        win, result_msg = True, "SUCCESS"
-        remaining_monster_hp = 0
-        counter_log = "몬스터가 쓰러졌습니다! 반격받지 않습니다."
-    else:
-        monster_dmg = temp['monster_atk']
-        final_hp -= monster_dmg
-        counter_log = f"😡 몬스터가 버텨냈습니다! 반격 데미지 -{monster_dmg}"
-        if final_hp > 0:
-            win, result_msg = True, "DRAW"
-        else:
-            win, result_msg = False, "FAIL"
+        crit_log = f"✨ **GREAT QTE!** (반응: {reaction_time:.3f}초) 데미지 1.2배!"
 
     st.session_state['battle_log'] = {
-        'atk': total_atk, 'hp': final_hp,
-        'monster_hp': remaining_monster_hp,
+        'damage': total_damage,
         'logs': temp['logs'],
         'detailed_logs': detailed_logs,
         'crit_log': crit_log,
-        'counter_log': counter_log,
-        'win': win, 'result_msg': result_msg,
-        'team': team_list, 'monster': temp['monster']
+        'result_msg': result_msg,
+        'grade': grade,
+        'ratio': ratio,
+        'team': team_list,
+        'monster': temp['monster']
     }
 
     st.session_state['log_animated'] = False
@@ -447,16 +432,12 @@ def finalize_battle(multiplier, reaction_time):
 
 
 def end_day():
-    win = st.session_state['battle_log']['win']
-
-    if win: st.session_state['score'] += 100 * st.session_state['day']
     st.session_state['day'] += 1
 
     if st.session_state['day'] > 7:
         st.session_state['game_over'] = True
     else:
         generate_daily_environment()
-        # 다음 날 멤버 뽑기
         draw_new_characters(4)
 
     st.session_state['game_phase'] = 'planning'
@@ -472,16 +453,59 @@ if 'day' not in st.session_state: init_game()
 # --- 엔딩 화면 ---
 if st.session_state['game_over']:
     st.balloons()
-    st.title("🏆 매니지먼트 최종 결과")
-    st.metric("최종 점수", st.session_state['score'])
-    if st.button("🔄 처음부터 다시 하기"):
+    st.title("🏆 시즌 종료: 최종 성적표")
+    st.metric("최종 누적 점수", st.session_state['total_score'])
+    st.write("7일간의 활동이 모두 끝났습니다! 수고하셨습니다.")
+
+    if st.button("🔄 새로운 시즌 시작하기"):
         init_game()
         st.rerun()
     st.stop()
 
+# --- [Phase 0: 스타팅 멤버 선택] (NEW) ---
+if st.session_state['game_phase'] == 'starter_selection':
+    st.markdown("## 🌟 파트너 선택")
+    st.write("이번 시즌을 함께할 메인 멤버를 선택해주세요.")
+    st.caption("선택한 멤버 외에 **3명의 추가 멤버(중복 없음)**가 지급되어 바로 4인 파티를 꾸릴 수 있습니다.")
+
+    candidates = st.session_state['starter_candidates']
+    cols = st.columns(3)
+
+    for i, name in enumerate(candidates):
+        info = stellive_db[name]
+        with cols[i]:
+            # 카드 보여주기
+            card_html = get_character_card_html(name, info, {'count': 1, 'fatigue': 100, 'star': 1}, False)
+            st.markdown(card_html, unsafe_allow_html=True)
+
+            if st.button(f"👉 {name} 선택", key=f"start_{name}", use_container_width=True):
+                # 1. 스타팅 멤버 지급
+                st.session_state['char_status'][name]['count'] += 1
+
+                # 2. 나머지 3명 지급 (무조건 중복되지 않게)
+                all_names = list(stellive_db.keys())
+                # 스타팅 멤버 제외한 리스트
+                remaining_pool = [n for n in all_names if n != name]
+                # 3명 랜덤 추출
+                others = random.sample(remaining_pool, 4)
+
+                for other in others:
+                    st.session_state['char_status'][other]['count'] += 1
+
+                msg = f"🎉 {name} + {', '.join(others)} 영입 완료!"
+                st.toast(msg, icon="🎁")
+
+                # 게임 시작
+                st.session_state['game_phase'] = 'planning'
+                st.rerun()
+
+    st.stop()  # 스타팅 선택 중에는 아래 UI 렌더링 안 함
+
 # --- 메인 게임 화면 ---
 c1, c2, c3 = st.columns([1, 2, 2])
-with c1: st.markdown(f"### 📅 Day {st.session_state['day']}")
+with c1:
+    st.markdown(f"### 📅 Day {st.session_state['day']}")
+    st.caption(f"누적 점수: {st.session_state['total_score']:,}")
 with c2:
     w = st.session_state['today_weather']
     st.info(f"날씨: {w['name']} {w['icon']} ({w['desc']})")
@@ -495,21 +519,20 @@ st.divider()
 if st.session_state['game_phase'] == 'planning':
 
     today_monster = monster_db[(st.session_state['day'] - 1) % len(monster_db)]
-    m_hp = today_monster['hp_base'] + (st.session_state['day'] * 50)
-    m_atk = today_monster.get('atk_base', 100) + (st.session_state['day'] * 20)
+    target_score = today_monster['target_score']
 
-    with st.expander(f"😈 금일 작전 목표: {today_monster['name']}", expanded=True):
+    with st.expander(f"🎯 금일의 목표: {today_monster['name']}", expanded=True):
         mc1, mc2 = st.columns([1, 4])
         with mc1: st.markdown(f"<div style='font-size:50px; text-align:center;'>{today_monster['icon']}</div>",
                               unsafe_allow_html=True)
         with mc2:
-            st.write(f"**체력:** {m_hp} | **공격력:** {m_atk} | **특징:** {today_monster['desc']}")
-            st.caption("공격 타이밍을 맞춰 데미지 2배(크리티컬)를 노리세요!")
+            st.write(f"**목표 점수:** {target_score:,} | **특징:** {today_monster['desc']}")
+            st.caption("최고의 조합으로 목표 점수를 돌파하여 S등급을 노리세요!")
 
     st.write("")
 
     # 파티 편성
-    st.subheader("🚩 파티 편성 (4명)")
+    st.subheader("🚩 멤버 배치 (4명)")
     my_team = st.session_state['my_team']
     cols_team = st.columns(4)
 
@@ -533,59 +556,32 @@ if st.session_state['game_phase'] == 'planning':
 
     if len(my_team) > 0:
         st.write("")
-
         current_traits = []
         for name in my_team:
             current_traits.extend(stellive_db[name]['trait'])
-
         trait_counts = Counter(current_traits)
-
-        active_synergies = []
-        possible_synergies = []
-
-        for trait, count in trait_counts.items():
-            if count >= 2:
-                active_synergies.append((trait, count))
-            else:
-                possible_synergies.append(trait)
+        active_synergies = [(t, c) for t, c in trait_counts.items() if c >= 2]
 
         with st.container(border=True):
             st.markdown("##### 🔗 현재 발동 시너지")
-
             if not active_synergies:
-                st.caption("아직 발동된 시너지가 없습니다. 같은 특성을 가진 멤버를 배치해보세요!")
+                st.caption("시너지가 없습니다. 특성을 맞춰보세요!")
             else:
                 syn_cols = st.columns(len(active_synergies))
-
                 for idx, (trait, count) in enumerate(active_synergies):
-                    is_qte = trait in QTE_TRIGGER_TRAITS
-
-                    if is_qte:
-                        badge_bg = "linear-gradient(45deg, #FF416C, #FF4B2B)"
-                        badge_icon = "⚔️"
-                        effect_text = "QTE 발동!"
-                    else:
-                        badge_bg = "#555"
-                        badge_icon = "🔹"
-                        effect_text = "스탯 UP"
-
+                    badge_bg = "linear-gradient(45deg, #FF416C, #FF4B2B)" if trait in QTE_TRIGGER_TRAITS else "#555"
+                    effect_text = "QTE 발동!" if trait in QTE_TRIGGER_TRAITS else "스탯 UP"
                     with syn_cols[idx]:
                         st.markdown(f"""
-                            <div style="background: {badge_bg}; padding: 8px; border-radius: 8px; color: white; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-                                <div style="font-size: 14px; font-weight: bold;">{badge_icon} {trait} Lv.{count}</div>
-                                <div style="font-size: 11px; opacity: 0.9;">{effect_text}</div>
+                            <div style="background: {badge_bg}; padding: 8px; border-radius: 8px; color: white; text-align: center;">
+                                <div style="font-size: 14px; font-weight: bold;">{trait} Lv.{count}</div>
+                                <div style="font-size: 11px;">{effect_text}</div>
                             </div>
                             """, unsafe_allow_html=True)
 
-            if possible_synergies and len(my_team) < 4:
-                st.write("")
-                st.caption(f"💡 힌트: **{', '.join(possible_synergies[:3])}** 등을 더 모아보세요!")
-
-    # [수정] 탈진 멤버 체크 로직 삭제
-
     btn_disabled = len(my_team) != 4
 
-    if st.button("🔥 전투 출격 (MISSION START)", type="primary", use_container_width=True, disabled=btn_disabled):
+    if st.button("🔥 공연 시작 (START)", type="primary", use_container_width=True, disabled=btn_disabled):
         process_battle_start(my_team)
 
     st.divider()
@@ -594,7 +590,6 @@ if st.session_state['game_phase'] == 'planning':
     st.subheader("👥 대기실 (멤버 선택)")
     tab_titles = ["ALL", "1기생", "2기생", "3기생", "사장/기타"]
     tabs = st.tabs(tab_titles)
-
     filter_groups = {"ALL": None, "1기생": "1기생", "2기생": "2기생", "3기생": "3기생", "사장/기타": "사장"}
 
     for tab, title in zip(tabs, tab_titles):
@@ -603,11 +598,7 @@ if st.session_state['game_phase'] == 'planning':
             row_cols = st.columns(4)
             idx = 0
             for name, info in stellive_db.items():
-                if target_group:
-                    if isinstance(target_group, list):
-                        if info.get('group', '기타') not in target_group: continue
-                    else:
-                        if info.get('group', '기타') != target_group: continue
+                if target_group and info.get('group', '기타') != target_group and target_group is not None: continue
 
                 status = st.session_state['char_status'][name]
                 is_selected = name in my_team
@@ -615,9 +606,7 @@ if st.session_state['game_phase'] == 'planning':
 
                 btn_label = "해제" if is_selected else "선택"
                 btn_type = "secondary" if is_selected else "primary"
-
-                if not is_owned:
-                    btn_label = "미보유"
+                if not is_owned: btn_label = "미보유"
 
                 with row_cols[idx % 4]:
                     card_html = get_character_card_html(name, info, status, is_selected)
@@ -634,94 +623,61 @@ if st.session_state['game_phase'] == 'planning':
                             merge_member(name)
                 idx += 1
 
-# --- [Phase 1.5: 공격 타이밍 미니게임] ---
+# --- [Phase 1.5: 미니게임 / 계산] ---
 elif st.session_state['game_phase'] == 'attack_minigame':
-
     synergy = st.session_state.get('synergy_name', '알 수 없음')
-
-    st.markdown(f"## ⚔️ '{synergy}' 특성 연계 공격 발동!")
-    st.info(f"파티원들의 **[{synergy}]** 특성이 공명하여 강력한 스킬을 준비합니다!")
-    st.write("신호가 오면 **발사**하여 데미지를 증폭시키세요!")
+    st.markdown(f"## ⚔️ '{synergy}' 시너지 발동!")
+    st.write("타이밍에 맞춰 클릭하여 최고 점수를 노리세요!")
 
     col_spacer1, col_center, col_spacer2 = st.columns([1, 2, 1])
-
     with col_center:
         placeholder = st.empty()
-
         if st.session_state['qte_state'] == 'READY':
             with placeholder.container():
-                st.info("파티원들이 자세를 잡습니다...")
-                st.markdown("<h3 style='text-align:center;'>준비...</h3>", unsafe_allow_html=True)
-
-                if st.button("🚀 공격 준비 (클릭)", type="primary", use_container_width=True):
+                st.info("준비...")
+                if st.button("🚀 준비 완료", type="primary", use_container_width=True):
                     st.session_state['qte_state'] = 'WAITING'
                     st.rerun()
-
         elif st.session_state['qte_state'] == 'WAITING':
             with placeholder.container():
-                st.warning("기회를 노리는 중...")
-                st.markdown("<div style='text-align:center; font-size:40px;'>...</div>", unsafe_allow_html=True)
-
+                st.warning("기다리세요...")
                 time.sleep(random.uniform(2.0, 4.0))
-
                 st.session_state['qte_start_time'] = time.time()
                 st.session_state['qte_state'] = 'ACTION'
                 st.rerun()
-
         elif st.session_state['qte_state'] == 'ACTION':
             with placeholder.container():
-                st.error("지금이야!!! 발사!!!")
-                st.markdown("<h1 style='text-align:center; color:red; font-size:60px;'>💥 FIRE!!!</h1>",
-                            unsafe_allow_html=True)
-
-                if st.button("🔥 필살기 발동!! (CLICK)", type="primary", use_container_width=True, key="atk_btn"):
+                st.error("지금!!!")
+                if st.button("🔥 발사!!", type="primary", use_container_width=True, key="atk_btn"):
                     reaction = time.time() - st.session_state['qte_start_time']
-
-                    multiplier = 1.0
-                    if reaction < 0.35:
-                        multiplier = 2.0  # 대성공
-                    elif reaction < 0.8:
-                        multiplier = 1.2  # 성공
-                    else:
-                        multiplier = 1.0  # 보통
-
+                    multiplier = 2.0 if reaction < 0.35 else (1.2 if reaction < 0.8 else 1.0)
                     finalize_battle(multiplier, reaction)
 
 elif st.session_state['game_phase'] == 'calculating':
-    st.markdown("## ⚔️ 일반 공격 준비")
-    st.info("특별한 시너지가 발견되지 않았습니다. 기본 전술로 공격을 수행합니다.")
-
-    st.write("")
-    st.write("")
-
+    st.markdown("## ⚔️ 일반 공격")
+    st.write("특별한 시너지가 없습니다. 기본 공격을 수행합니다.")
     col_spacer1, col_center, col_spacer2 = st.columns([1, 2, 1])
-
     with col_center:
-        st.markdown("<h3 style='text-align:center;'>명령 대기 중...</h3>", unsafe_allow_html=True)
-
-        if st.button("⚔️ 공격 개시 (ENGAGE)", type="primary", use_container_width=True):
+        if st.button("⚔️ 공격 시작", type="primary", use_container_width=True):
             finalize_battle(1.0, 0.0)
-    pass
 
 # --- [Phase 2: 결과 단계] ---
 elif st.session_state['game_phase'] == 'result':
-    st.subheader("📊 작전 결과 보고")
+    st.subheader("📊 공격 결과")
     log = st.session_state['battle_log']
     monster = log['monster']
 
     with st.container(border=True):
-        st.markdown("### ⚔️ 전투 상세 기록")
+        st.markdown(log['result_msg'], unsafe_allow_html=True)  # 등급 표시
         st.info(log['crit_log'])
 
         if not st.session_state.get('log_animated', False):
             placeholder = st.empty()
             accumulated_logs = []
-
             for line in log['detailed_logs']:
                 accumulated_logs.append(line)
                 placeholder.markdown("".join(accumulated_logs), unsafe_allow_html=True)
-                time.sleep(0.5)
-
+                time.sleep(0.05)
             st.session_state['log_animated'] = True
         else:
             for line in log['detailed_logs']:
@@ -729,29 +685,17 @@ elif st.session_state['game_phase'] == 'result':
 
     st.divider()
 
-    if log['result_msg'] == 'SUCCESS':
-        st.success("🎉 작전 성공! 적을 물리쳤습니다.")
-    elif log['result_msg'] == 'DRAW':
-        st.warning("⚠️ 작전 무승부. 적을 처치하진 못했지만 생존했습니다.")
-    else:
-        st.error("💀 작전 실패. 아군이 전멸했습니다.")
-
-    if log['counter_log']:
-        st.warning(log['counter_log'])
-
     c_res1, c_res2 = st.columns(2)
     with c_res1:
-        st.write(f"**아군 총 공격력:** {log['atk']}")
-        st.write(f"**아군 남은 체력:** {log['hp']}")
-        with st.expander("버프 로그 상세"):
+        st.metric("🔥 총 데미지", f"{log['damage']:,}")
+        st.caption(f"목표 점수 달성률: {log['ratio']:.1f}%")
+        with st.expander("버프 로그"):
             for l in log['logs']: st.write(l)
     with c_res2:
-        st.write(f"**적 남은 체력:** {log['monster_hp']}")
-        st.write(f"**적:** {monster['name']}")
+        st.metric("🎯 목표 점수", f"{monster['target_score']:,}")
+        st.write(f"**상대:** {monster['name']}")
 
     st.write("---")
 
-    # [수정] 피로도 정산 메시지 삭제
-
-    if st.button("🌙 하루 마무리 (다음날로 이동)", type="primary"):
+    if st.button("🌙 정산 및 다음 날로", type="primary"):
         end_day()
