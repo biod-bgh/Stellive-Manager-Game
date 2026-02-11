@@ -142,6 +142,34 @@ battle_events = [
 ]
 
 # ==========================================
+#  게임 밸런스 설정
+# ==========================================
+BALANCE_CONFIG = {
+    # 1. 성급(Star) 보너스
+    # 1성 증가할 때마다 기본 스탯에 더해지는 배율 (0.5 = 50% 증가)
+    # 예: 1성(1.0) -> 2성(1.5) -> 3성(2.0)
+    'STAR_BONUS_PER_LEVEL': 0.5,
+
+    # 2. 날씨(Weather) 배율
+    'WEATHER_BUFF': 1.2,  # 상성 맞음 (20% 증가)
+    'WEATHER_DEBUFF': 0.8,  # 상성 안맞음 (20% 감소)
+
+    # 3. 이벤트(Event) 배율
+    'EVENT_BUFF': 1.3,  # 팬미팅 등 (30% 증가)
+    'EVENT_DEBUFF': 0.8,  # 장비 고장 등 (20% 감소)
+
+    # 4. QTE 미니게임 판정 기준 (초 단위) 및 배율
+    'QTE': {
+        'PERFECT_TIME': 0.35,  # 이 시간 안에 누르면 퍼펙트
+        'GREAT_TIME': 0.80,  # 이 시간 안에 누르면 그레이트
+
+        'PERFECT_MULT': 2.0,  # 퍼펙트 시 데미지 배율 (2배)
+        'GREAT_MULT': 1.2,  # 그레이트 시 데미지 배율 (1.2배)
+        'NORMAL_MULT': 1.0  # 일반/실패 시 데미지 배율
+    }
+}
+
+# ==========================================
 # 2. 게임 로직 (Logic Layer)
 # ==========================================
 
@@ -243,27 +271,35 @@ def calculate_base_stats(team_list):
         stat = st.session_state['char_status'][name]
         atk = char['atk']
 
-        star_multiplier = 1.0 + (stat['star'] - 1) * 0.5
+        # [설정값 적용] 성급 보너스
+        bonus_per_star = BALANCE_CONFIG['STAR_BONUS_PER_LEVEL']
+        star_multiplier = 1.0 + (stat['star'] - 1) * bonus_per_star
         atk = int(atk * star_multiplier)
 
         if stat['star'] > 1:
             logs.append(f"⭐ **{name}**: {stat['star']}성 위력 (x{star_multiplier})")
 
+        # [설정값 적용] 날씨 보정
         if stat['condition'] > 0:
-            atk *= 1.2
-            logs.append(f"🙂 **{name}**: 날씨 버프 (+20%)")
+            buff = BALANCE_CONFIG['WEATHER_BUFF']
+            atk = int(atk * buff)
+            logs.append(f"🙂 **{name}**: 날씨 버프 (x{buff})")
         elif stat['condition'] < 0:
-            atk *= 0.8
-            logs.append(f"🌧️ **{name}**: 날씨 디버프 (-20%)")
+            debuff = BALANCE_CONFIG['WEATHER_DEBUFF']
+            atk = int(atk * debuff)
+            logs.append(f"🌧️ **{name}**: 날씨 디버프 (x{debuff})")
 
         total_atk += atk
 
+    # [설정값 적용] 이벤트 보정
     if event['effect'] == 'atk_up':
-        total_atk *= 1.3
-        logs.append(f"🔥 이벤트 버프 (+30%)")
+        buff = BALANCE_CONFIG['EVENT_BUFF']
+        total_atk = int(total_atk * buff)
+        logs.append(f"🔥 이벤트 버프 (x{buff})")
     elif event['effect'] == 'atk_down':
-        total_atk *= 0.8;
-        logs.append(f"📉 이벤트 디버프 (-20%)")
+        debuff = BALANCE_CONFIG['EVENT_DEBUFF']
+        total_atk = int(total_atk * debuff)
+        logs.append(f"📉 이벤트 디버프 (x{debuff})")
 
     return int(total_atk), logs
 
@@ -356,20 +392,26 @@ def finalize_battle(multiplier, reaction_time):
         char_info = stellive_db[name]
         status = st.session_state['char_status'][name]
 
-        star_multiplier = 1.0 + (status['star'] - 1) * 0.5
+        # [설정값 적용] 성급 보너스 (위와 동일 로직)
+        bonus_per_star = BALANCE_CONFIG['STAR_BONUS_PER_LEVEL']
+        star_multiplier = 1.0 + (status['star'] - 1) * bonus_per_star
         base_atk = int(char_info['atk'] * star_multiplier)
 
+        # [설정값 적용] 날씨 보정
         if status['condition'] > 0:
-            base_atk *= 1.2
+            base_atk = int(base_atk * BALANCE_CONFIG['WEATHER_BUFF'])
         elif status['condition'] < 0:
-            base_atk *= 0.8
+            base_atk = int(base_atk * BALANCE_CONFIG['WEATHER_DEBUFF'])
 
         action = random.choice(battle_events)
         mult = action['mult']
+
+        # 최종 데미지 = 기본공격력 * 랜덤이벤트배율 * QTE배율
         final_char_atk = int(base_atk * mult * multiplier)
 
         total_damage += final_char_atk
 
+        # (로그 출력 부분은 기존 유지)
         if mult > 1.2:
             style = "font-size: 1.2em; color: #ff8c00; font-weight: bold; padding: 5px;"
             prefix = "💥 CRITICAL:"
@@ -409,10 +451,15 @@ def finalize_battle(multiplier, reaction_time):
     result_msg = f"<h2 style='color:{grade_color}; text-align:center;'>GRADE: {grade}</h2>"
 
     crit_log = ""
-    if multiplier >= 2.0:
-        crit_log = f"⚡ **PERFECT QTE!** (반응: {reaction_time:.3f}초) 데미지 2배!"
-    elif multiplier > 1.0:
-        crit_log = f"✨ **GREAT QTE!** (반응: {reaction_time:.3f}초) 데미지 1.2배!"
+    qte_cfg = BALANCE_CONFIG['QTE']
+
+    # QTE 배율에 따라 메시지 출력
+    if multiplier >= qte_cfg['PERFECT_MULT']:
+        crit_log = f"⚡ **PERFECT QTE!** (반응: {reaction_time:.3f}초) 데미지 {multiplier}배!"
+    elif multiplier >= qte_cfg['GREAT_MULT']:
+        crit_log = f"✨ **GREAT QTE!** (반응: {reaction_time:.3f}초) 데미지 {multiplier}배!"
+    else:
+        crit_log = f"💨 **NORMAL QTE** (반응: {reaction_time:.3f}초) 기본 데미지로 공격."
 
     st.session_state['battle_log'] = {
         'damage': total_damage,
@@ -651,6 +698,14 @@ elif st.session_state['game_phase'] == 'attack_minigame':
                 if st.button("🔥 발사!!", type="primary", use_container_width=True, key="atk_btn"):
                     reaction = time.time() - st.session_state['qte_start_time']
                     multiplier = 2.0 if reaction < 0.35 else (1.2 if reaction < 0.8 else 1.0)
+                    qte = BALANCE_CONFIG['QTE']
+                    multiplier = qte['NORMAL_MULT']  # 기본값
+
+                    if reaction < qte['PERFECT_TIME']:
+                        multiplier = qte['PERFECT_MULT']
+                    elif reaction < qte['GREAT_TIME']:
+                        multiplier = qte['GREAT_MULT']
+
                     finalize_battle(multiplier, reaction)
 
 elif st.session_state['game_phase'] == 'calculating':
@@ -699,3 +754,51 @@ elif st.session_state['game_phase'] == 'result':
 
     if st.button("🌙 정산 및 다음 날로", type="primary"):
         end_day()
+
+# # ==========================================
+# # [DEV TOOL] 밸런스 시뮬레이터 (개발용)
+# # ==========================================
+# with st.sidebar.expander("🛠️ 기획자용 밸런스 계산기", expanded=True):
+#     st.write("캐릭터 조합별 데미지 범위를 계산합니다.")
+#
+#     # 1. 시뮬레이션 설정
+#     sim_star = st.slider("평균 성급(Star)", 1, 3, 1)
+#     sim_members = st.multiselect("테스트 멤버 (4명)", list(stellive_db.keys()), default=list(stellive_db.keys())[:4])
+#
+#     if len(sim_members) < 4:
+#         st.warning("4명을 선택해주세요.")
+#     else:
+#         # 2. 계산 로직
+#         total_base_atk = sum([stellive_db[m]['atk'] for m in sim_members])
+#         star_mult = 1.0 + (sim_star - 1) * 0.5
+#         adj_atk = int(total_base_atk * star_mult)  # 성급 반영 기본공격력
+#
+#         # 시나리오별 배율 정의
+#         # Min: 날씨(0.8) * 이벤트(0.8) * 배틀이벤트(0.3) * QTE(1.0) = 0.192
+#         # Avg: 날씨(1.0) * 이벤트(1.0) * 배틀이벤트(1.2) * QTE(1.2) = 1.44
+#         # Max: 날씨(1.2) * 이벤트(1.3) * 배틀이벤트(2.2) * QTE(2.0) = 6.86
+#
+#         min_dmg = int(adj_atk * 0.8 * 0.8 * 0.3 * 1.0)
+#         avg_dmg = int(adj_atk * 1.0 * 1.0 * 1.2 * 1.2)  # 평균적인 이벤트 배율 1.2 가정
+#         max_dmg = int(adj_atk * 1.2 * 1.3 * 2.2 * 2.0)
+#
+#         # 3. 시각화
+#         st.markdown("### 💥 예상 데미지 범위")
+#         st.metric("최소 데미지 (운 나쁨)", f"{min_dmg:,}")
+#         st.metric("평균 데미지 (보통)", f"{avg_dmg:,}")
+#         st.metric("최대 데미지 (운 대박)", f"{max_dmg:,}")
+#
+#         # 그래프 데이터 생성
+#         chart_data = {
+#             "Scenario": ["Min", "Avg", "Max"],
+#             "Damage": [min_dmg, avg_dmg, max_dmg]
+#         }
+#         st.bar_chart(chart_data, x="Scenario", y="Damage", color="#FF4B4B")
+#
+#         # 4. 현재 몬스터 체력과 비교
+#         st.markdown("### 👾 현재 몬스터 설정 비교")
+#         for m in monster_db:
+#             diff = m['target_score'] - avg_dmg
+#             diff_text = "쉬움" if diff < 0 else "어려움"
+#             diff_color = "blue" if diff < 0 else "red"
+#             st.caption(f"**{m['name']}** (목표: {m['target_score']:,}) : :{diff_color}[{diff_text}]")
