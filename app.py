@@ -804,7 +804,6 @@ elif st.session_state['game_phase'] == 'attack_minigame':
                     reaction = time.time() - st.session_state['qte_start_time']
                     multiplier = 2.0 if reaction < 0.35 else (1.2 if reaction < 0.8 else 1.0)
                     qte = BALANCE_CONFIG['QTE']
-                    multiplier = qte['NORMAL_MULT']  # 기본값
 
                     if reaction < qte['PERFECT_TIME']:
                         multiplier = qte['PERFECT_MULT']
