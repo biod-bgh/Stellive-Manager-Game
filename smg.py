@@ -12,17 +12,19 @@ from collections import Counter
 # ==========================================
 GAME_ICONS = {
     # [캐릭터 특성]
-    '신화': '💎', '전설': '✨', '용': '🐲', '무희': '💃',
+    '신화': '💎', '전설': '🌟', '용': '🐲', '무희': '💃',
     '동물': '🦄', '탱커': '🛡️', '현대': '🏙️', '인간': '👤',
     '가희': '🎤', '우주': '🌌', '뱀파이어': '🧛', '이세계': '🪐',
     '보스': '👑',
 
     # [몬스터 아이콘]
+    '바이러스': '👾',
+    '오니' : '👺',
     '허수아비': '🎯',  # 허수아비
     '악플': '😈',  # 악플러
-    '경찰': '👮‍♂️',  # 저작권 경찰
-    '달력': '📅',  # 월요일
-    '불': '🔥',  # 보스
+    'AI': '🤖️',  # 저작권 경찰
+    '아침': '📅',  # 월요일
+    '트로피': '🏆',  # 보스
     'TV': '📺',  # 방송 사고
 
     # [기타/기본]
@@ -36,17 +38,16 @@ DEFAULT_ICON = '🔹'
 # ==========================================
 # QTE 발동시킬 특성조합 ( 아이콘, 특성이름 함께 써야 가능.)
 # ==========================================
-QTE_TRIGGER_TRAITS = ['🐲 용', '🎧 전설', '👑 보스', '🪐 이세계']
+QTE_TRIGGER_TRAITS = ['🐲 용', '🌟 전설', '👑 보스', '🪐 이세계']
 
 
 # ==========================================
-#  데이터 매니저 (Data Manager)
+# 데이터 매니저 (엑셀 .xlsx 버전 - 통합)
 # ==========================================
 @st.cache_data(show_spinner=False)
 def load_game_data():
-    """엑셀 파일(.xlsx)을 읽어서 데이터 변환 (인코딩 문제 없음!)"""
+    """엑셀 파일 하나에서 캐릭터, 몬스터, 이벤트, 전투대사를 모두 읽어옴"""
 
-    # 엑셀 파일 경로
     excel_path = "data/game_data.xlsx"
 
     if not os.path.exists(excel_path):
@@ -54,25 +55,18 @@ def load_game_data():
         st.stop()
 
     try:
-        # 엑셀 파일 통째로 읽기 (Sheet 이름을 키값으로 가짐)
-        # engine='openpyxl' 필수
+        # 모든 시트 로딩
         xls = pd.read_excel(excel_path, sheet_name=None, engine='openpyxl')
 
         # ----------------------------------
-        # A. 캐릭터 시트 ('characters') 읽기
+        # A. 캐릭터 ('character_stat')
         # ----------------------------------
-        df_char = xls['character_stat']  # 시트 이름
+        df_char = xls['character_stat']
         char_db = {}
-
         for _, row in df_char.iterrows():
             traits_str = str(row['trait'])
             raw_traits = [t.strip() for t in traits_str.split(',')]
-
-            # 이모지 매핑 (이전에 만든 GAME_ICONS 사용)
-            fancy_traits = []
-            for t in raw_traits:
-                icon = GAME_ICONS.get(t, GAME_ICONS['기본'])
-                fancy_traits.append(f"{icon} {t}")
+            fancy_traits = [f"{GAME_ICONS.get(t, GAME_ICONS['기본'])} {t}" for t in raw_traits]
 
             char_db[row['name']] = {
                 'group': row['group'],
@@ -84,140 +78,57 @@ def load_game_data():
             }
 
         # ----------------------------------
-        # B. 몬스터 시트 ('monsters') 읽기
+        # B. 몬스터 ('monster_stat')
         # ----------------------------------
-        df_mon = xls['monster_stat']  # 시트 이름
+        df_mon = xls['monster_stat']
         mon_db = []
-
         for _, row in df_mon.iterrows():
             icon_key = str(row['icon']).strip()
-            mapped_icon = GAME_ICONS.get(icon_key, GAME_ICONS['몬스터기본'])
-
             mon_db.append({
                 'name': row['name'],
                 'target_score': int(row['target_score']),
-                'icon': mapped_icon,
+                'icon': GAME_ICONS.get(icon_key, GAME_ICONS['몬스터기본']),
                 'desc': row['desc']
             })
 
-        return char_db, mon_db
+        # ----------------------------------
+        # C. 일일 이벤트 ('event')
+        # ----------------------------------
+        df_evt = xls['event']
+        evt_db = []
+        for _, row in df_evt.iterrows():
+            evt_db.append({
+                'name': row['name'],
+                'desc': row['desc'],
+                'effect': row['effect']
+            })
+
+        # ----------------------------------
+        # D. 전투 이벤트 ('battle_event')
+        # ----------------------------------
+        df_battle = xls['battle_event']
+        battle_db = []
+        for _, row in df_battle.iterrows():
+            battle_db.append({
+                'event': row['event'],
+                'effect': row['effect'],
+                'mult': float(row['mult'])  # 소수점이므로 float 변환
+            })
+
+        return char_db, mon_db, evt_db, battle_db
 
     except KeyError as e:
-        st.error(f"🚨 엑셀 시트 이름을 확인하세요! ('characters', 'monsters'여야 함)\n에러: {e}")
+        st.error(f"🚨 엑셀 시트 이름을 확인하세요! (character_stat, monster_stat, event, battle_event)\n누락된 시트: {e}")
         st.stop()
     except Exception as e:
         st.error(f"🚨 엑셀 로딩 중 오류 발생: {e}")
         st.stop()
 
-    # 전역 변수 할당
-stellive_db, monster_db = load_game_data()
 
-
-# stellive_db = {
-#     # 1기생
-#     '아이리 칸나': {
-#         'group': '1기생',
-#         'trait': ['💎 신화', '🐲 용', '💃 무희'],
-#         'atk': 95,
-#         'desc': '노래로 적을 제압',
-#         'color': '#3B82F6', 'type': 'outdoor'
-#     },
-#     '아야츠노 유니': {
-#         'group': '1기생',
-#         'trait': ['✨ 전설', '🦄 동물', '💃 무희'],
-#         'atk': 50,
-#         'desc': '어그로 담당',
-#         'color': '#F472B6', 'type': 'outdoor'
-#     },
-#     '사키하네 후야': {
-#         'group': '1기생',
-#         'trait': ['✨ 전설', '🐲 용', '🛡️ 탱커'],
-#         'atk': 50,
-#         'desc': '다시태어난마룡',
-#         'color': '#F472B6', 'type': 'indoor'
-#     },
-#
-#     # 2기생
-#     '시라유키 히나': {
-#         'group': '2기생',
-#         'trait': ['🏙️ 현대', '👤 인간', '🎤 가희'],
-#         'icon': '🎧', 'atk': 85,
-#         'desc': 'SIUUUUU',
-#         'color': '#A855F7', 'type': 'outdoor'
-#     },
-#
-#     '네네코 마시로': {
-#         'group': '2기생',
-#         'trait': ['🌌 우주', '🦄 동물', '🎤 가희'],
-#         'atk': 30,
-#         'desc': '밍',
-#         'color': '#FCD34D', 'type': 'indoor'
-#     },
-#     '아카네 리제': {
-#         'group': '2기생',
-#         'trait': ['✨ 전설', '🧛 뱀파이어', '💃 무희'],
-#         'atk': 88,
-#         'desc': '강력한 파괴력',
-#         'color': '#EF4444', 'type': 'indoor'
-#     },
-#     '아라하시 타비': {
-#         'group': '2기생',
-#         'trait': ['🪐 이세계', '👤 인간', '🛡️ 탱커'],
-#         'atk': 60,
-#         'desc': '기적의 용사',
-#         'color': '#06B6D4', 'type': 'outdoor'
-#     },
-#
-#     # 3기생
-#     '텐코 시부키': {
-#         'group': '3기생',
-#         'trait': ['✨ 전설', '🦄 동물', '💃 무희'],
-#         'atk': 60,
-#         'desc': '여우신',
-#         'color': '#06B6D4', 'type': 'outdoor'
-#     },
-#
-#     '하나코 나나': {
-#         'group': '3기생',
-#         'trait': ['🏙️ 현대', '👤 인간', '🎤 가희'],
-#         'atk': 60,
-#         'desc': '다시 태어난 요원',
-#         'color': '#06B6D4', 'type': 'outdoor'
-#     },
-#
-#     '유즈하 리코': {
-#         'group': '3기생',
-#         'trait': ['🪐 이세계', '👤 인간', '🎤 가희'],
-#         'atk': 60,
-#         'desc': '하이용사',
-#         'color': '#06B6D4', 'type': 'outdoor'
-#     },
-#
-#     '아오쿠모 린': {
-#         'group': '3기생',
-#         'trait': ['🏙️ 현대', '👤 인간', '🛡️ 탱커'],
-#         'atk': 60,
-#         'desc': '뇨',
-#         'color': '#06B6D4', 'type': 'outdoor'
-#     },
-#
-#     # 사장/기타
-#     '강지': {
-#         'group': '사장',
-#         'trait': ['👑 보스', '🎤 가희'],
-#         'atk': 99,
-#         'desc': '별의 주인',
-#         'color': '#111827',
-#         'type': 'outdoor'},
-# }
-
-# monster_db = [
-#     {"name": "허수아비 (Tutorial)", "target_score": 300, "icon": "🎯", "desc": "가볍게 몸을 풀어봅시다."},
-#     {"name": "악플러 군단", "target_score": 500, "icon": "😈", "desc": "얼마나 세게 때릴 수 있을까요?"},
-#     {"name": "저작권 경찰", "target_score": 700, "icon": "👮‍♂️", "desc": "매우 단단합니다. 고득점을 노리세요."},
-#     {"name": "월요일 아침", "target_score": 1200, "icon": "📅", "desc": "직장인의 주적. 전력을 다하세요."},
-#     {"name": "레이드 보스", "target_score": 1500, "icon": "🔥", "desc": "최고 기록에 도전하세요!"},
-# ]
+# ==========================================
+# [핵심] 전역 변수에 4개 데이터 할당
+# ==========================================
+stellive_db, monster_db, event_db, battle_events = load_game_data()
 
 weather_db = {
     '맑음': {'icon': '☀️', 'desc': '야외 활동하기 좋습니다.', 'buff': 'outdoor', 'debuff': 'indoor'},
@@ -225,27 +136,6 @@ weather_db = {
     '태풍': {'icon': '🌪️', 'desc': '날씨가 험합니다.', 'buff': None, 'debuff': 'all'},
     '오로라': {'icon': '🌌', 'desc': '모두의 컨디션 상승.', 'buff': 'all', 'debuff': None},
 }
-
-event_db = [
-    {'name': '평범한 하루', 'desc': '평화롭습니다.', 'effect': 'none'},
-    {'name': '간식 배달', 'desc': '사장님의 간식!', 'effect': 'stamina_save'},
-    {'name': '장비 고장', 'desc': '장비 이슈 발생. (전투력 감소)', 'effect': 'atk_down'},
-    {'name': '팬미팅', 'desc': '응원 버프! (전투력 대폭 상승)', 'effect': 'atk_up'},
-]
-
-battle_events = [
-    {"event": "화려한 고음을 질러", "effect": "음파 데미지가 폭발했습니다!", "mult": 1.5},
-    {"event": "실수로 마이크를 떨어뜨렸지만", "effect": "오히려 적이 당황했습니다.", "mult": 2.0},
-    {"event": "팬들의 응원을 받고", "effect": "초인적인 힘을 발휘했습니다!", "mult": 2.0},
-    {"event": "평소 연습한 콤보를", "effect": "완벽하게 성공시켰습니다.", "mult": 2.2},
-    {"event": "귀여운 표정을 지어", "effect": "적을 방심하게 만들었습니다.", "mult": 1.1},
-    {"event": "넘어질 뻔했지만 자연스럽게", "effect": "회전 회오리 킥을 날렸습니다!", "mult": 1.4},
-    {"event": "갑자기 방송 텐션이 올라", "effect": "미친듯한 딜을 넣었습니다.", "mult": 1.2},
-    {"event": "방송이 갑자기 꺼지며", "effect": "울기 시작했습니다....", "mult": 0.5},
-    {"event": "방종 후에 마이크가 켜지고", "effect": "자기야~ 나 방종했어...어?!", "mult": 0.3},
-    {"event": "팬들의 응원에 힘입어", "effect": "아무 일도 없었습니다.", "mult": 1.0},
-    {"event": "화려한 음악이 나를 감싸고", "effect": "딱히 별 일은 아니었네요.", "mult": 1.0},
-]
 
 # ==========================================
 #  게임 밸런스 설정
@@ -360,7 +250,7 @@ def merge_member(name):
     """3개를 소모하여 성급(Star)을 올림"""
     status = st.session_state['char_status'][name]
     if status['count'] >= 3:
-        status['count'] -= 3
+        status['count'] -= 2
         status['star'] += 1
         st.toast(f"🎉 {name} {status['star']}성으로 승급 완료! (공격력 대폭 상승)", icon="🆙")
         st.rerun()
