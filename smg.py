@@ -306,11 +306,7 @@ def finalize_battle(multiplier, reaction_time):
             prefix = "HIT:"
 
         star_str = "⭐" * status['star']
-        log_msg = f"""
-        <div style="{style} margin-bottom: 5px;">
-            {prefix} <b>{name}{star_str}</b>: {action['effect']} (DMG: {final_char_atk})
-        </div>
-        """
+        log_msg = f"<div style='{style} margin-bottom: 5px;'>{prefix} <b>{name}{star_str}</b>: {action['effect']} (DMG: {final_char_atk})</div>"
         detailed_logs.append(log_msg)
 
     st.session_state['total_score'] += total_damage
@@ -692,31 +688,23 @@ elif st.session_state['game_phase'] == 'calculating':
         if st.button("⚔️ 공격 시작", type="primary", use_container_width=True):
             finalize_battle(1.0, 0.0)
 
+# --- [Phase 2: 결과 단계] ---
 elif st.session_state['game_phase'] == 'result':
     st.subheader("📊 공격 결과")
     log = st.session_state['battle_log']
     monster = log['monster']
 
-    with st.container(border=True):
-        st.markdown(log['result_msg'], unsafe_allow_html=True)
-        st.info(log['crit_log'])
-        if not st.session_state.get('log_animated', False):
-            placeholder = st.empty()
-            accumulated_logs = []
-            for line in log['detailed_logs']:
-                accumulated_logs.append(line)
-                placeholder.markdown("".join(accumulated_logs), unsafe_allow_html=True)
-                time.sleep(0.05)
-            st.session_state['log_animated'] = True
-        else:
-            for line in log['detailed_logs']:
-                st.markdown(line, unsafe_allow_html=True)
+    # 🌟 [NEW] 긴장감을 위한 자리 표시자(Placeholder) 세팅
+    # 이 공간들에 순서대로 데이터가 채워집니다.
+    grade_area = st.empty()
+    qte_area = st.empty()
+    battle_log_area = st.empty()
 
     st.divider()
+
     c_res1, c_res2 = st.columns(2)
     with c_res1:
-        st.metric("🔥 총 데미지", f"{log['damage']:,}")
-        st.caption(f"목표 점수 달성률: {log['ratio']:.1f}%")
+        dmg_area = st.empty()
         with st.expander("버프 적용 상세 로그"):
             for l in log['logs']: st.write(l)
     with c_res2:
@@ -724,8 +712,45 @@ elif st.session_state['game_phase'] == 'result':
         st.write(f"**상대:** {monster['name']}")
 
     st.write("---")
-    if st.button("🌙 정산 및 다음 날로", type="primary"):
-        end_day()
+    btn_area = st.empty() # 다음 날로 넘어가는 버튼 자리
+
+    # 🌟 [NEW] 애니메이션 연출 로직
+    if not st.session_state.get('log_animated', False):
+        # 1. QTE 결과 먼저 출력 (반응 속도 확인!)
+        qte_area.info(log['crit_log'])
+        time.sleep(1.0) # 1초 대기
+
+        # 2. 멤버별 공격 로그를 0.8초 간격으로 한 명씩 출력
+        accumulated_logs = []
+        for line in log['detailed_logs']:
+            accumulated_logs.append(line)
+            # 로그를 예쁜 박스 안에 누적해서 그림
+            battle_log_area.markdown(f"<div style='border:1px solid rgba(255,255,255,0.2); padding:15px; border-radius:10px; background:rgba(0,0,0,0.1);'>{''.join(accumulated_logs)}</div>", unsafe_allow_html=True)
+            time.sleep(0.8) # 다음 멤버 공격까지 긴장감 형성!
+
+        # 3. 계산 중... (드럼롤 효과 🥁)
+        dmg_area.metric("🔥 총 데미지", "집계 중... ⏳")
+        time.sleep(1.5) # 1.5초간 뜸 들이기
+
+        # 4. 최종 데미지 & 등급 쾅!
+        dmg_area.metric("🔥 총 데미지", f"{log['damage']:,}", f"달성률: {log['ratio']:.1f}%")
+        grade_area.markdown(log['result_msg'], unsafe_allow_html=True)
+        time.sleep(0.5)
+
+        # 애니메이션이 끝났음을 저장하고 새로고침하여 버튼을 표시
+        st.session_state['log_animated'] = True
+        st.rerun()
+
+    else:
+        # 이미 애니메이션을 다 본 상태 (새로고침 시 대기시간 생략)
+        grade_area.markdown(log['result_msg'], unsafe_allow_html=True)
+        qte_area.info(log['crit_log'])
+        battle_log_area.markdown(f"<div style='border:1px solid rgba(255,255,255,0.2); padding:15px; border-radius:10px; background:rgba(0,0,0,0.1);'>{''.join(log['detailed_logs'])}</div>", unsafe_allow_html=True)
+        dmg_area.metric("🔥 총 데미지", f"{log['damage']:,}", f"달성률: {log['ratio']:.1f}%")
+
+        # 결과 연출이 모두 끝난 후에만 '다음 날로' 버튼이 나타남
+        if btn_area.button("🌙 정산 및 다음 날로", type="primary"):
+            end_day()
 
 # # ==========================================
 # # [DEV TOOL] 기획자용 밸런스 시뮬레이터
