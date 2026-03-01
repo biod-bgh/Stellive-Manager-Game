@@ -727,72 +727,72 @@ elif st.session_state['game_phase'] == 'result':
     if st.button("🌙 정산 및 다음 날로", type="primary"):
         end_day()
 
-# ==========================================
-# [DEV TOOL] 기획자용 밸런스 시뮬레이터
-# ==========================================
-with st.sidebar.expander("🛠️ 기획자용 밸런스 계산기", expanded=True):
-    st.write("캐릭터 조합과 시너지를 바탕으로 데미지 범위를 계산합니다.")
-
-    # 1. 시뮬레이션 설정
-    sim_star = st.slider("평균 성급(Star)", 1, 3, 1)
-
-    # 캐릭터 목록이 4명 이상일 때만 기본값 4명 설정
-    all_chars = list(stellive_db.keys())
-    default_chars = all_chars[:4] if len(all_chars) >= 4 else all_chars
-
-    sim_members = st.multiselect("테스트 멤버 (4명)", all_chars, default=default_chars)
-
-    if len(sim_members) < 4:
-        st.warning("정확한 테스트를 위해 4명을 선택해주세요.")
-    else:
-        # 2. 계산 로직 (새로운 시너지 시스템 반영)
-        active_syns = get_active_synergies(sim_members)
-
-        adj_atk = 0
-        for name in sim_members:
-            char = stellive_db[name]
-            base = char['atk']
-
-            # 성급 보너스 적용
-            star_mult = 1.0 + (sim_star - 1) * BALANCE_CONFIG['STAR_BONUS_PER_LEVEL']
-            base = int(base * star_mult)
-
-            # 시너지 보너스 적용
-            char_syn_mult = 1.0
-            for syn_key, mult in active_syns.items():
-                if char['group'] == syn_key or any(syn_key in t for t in char['trait']):
-                    char_syn_mult *= mult
-
-            if char_syn_mult > 1.0:
-                base = int(base * char_syn_mult)
-
-            adj_atk += base
-
-        # 시나리오별 배율 정의 (날씨, 이벤트, QTE, 전투대사)
-        # Min: 모두 디버프 + 최하 배율 콤보
-        min_dmg = int(adj_atk * BALANCE_CONFIG['WEATHER_DEBUFF'] * BALANCE_CONFIG['EVENT_DEBUFF'] * 0.3 * 1.0)
-        # Avg: 버프/디버프 없음 + 평균 콤보
-        avg_dmg = int(adj_atk * 1.0 * 1.0 * 1.2 * 1.2)
-        # Max: 모두 버프 + 최고 배율 콤보 (크리티컬 + 퍼펙트 QTE)
-        max_dmg = int(adj_atk * BALANCE_CONFIG['WEATHER_BUFF'] * BALANCE_CONFIG['EVENT_BUFF'] * 2.2 * 2.0)
-
-        # 3. 시각화
-        st.markdown("### 💥 예상 데미지 범위")
-        st.metric("최소 데미지 (운 나쁨)", f"{min_dmg:,}")
-        st.metric("평균 데미지 (보통)", f"{avg_dmg:,}")
-        st.metric("최대 데미지 (운 대박)", f"{max_dmg:,}")
-
-        # 그래프 데이터 생성
-        chart_data = {
-            "Scenario": ["Min", "Avg", "Max"],
-            "Damage": [min_dmg, avg_dmg, max_dmg]
-        }
-        st.bar_chart(chart_data, x="Scenario", y="Damage", color="#FF4B4B")
-
-        # 4. 현재 몬스터 체력과 비교
-        st.markdown("### 👾 몬스터 목표치 비교")
-        for m in monster_db:
-            diff = m['target_score'] - avg_dmg
-            diff_text = "쉬움 (클리어 가능)" if diff < 0 else "어려움 (스펙 부족)"
-            diff_color = "blue" if diff < 0 else "red"
-            st.caption(f"**{m['name']}** (목표: {m['target_score']:,}) : :{diff_color}[{diff_text}]")
+# # ==========================================
+# # [DEV TOOL] 기획자용 밸런스 시뮬레이터
+# # ==========================================
+# with st.sidebar.expander("🛠️ 기획자용 밸런스 계산기", expanded=True):
+#     st.write("캐릭터 조합과 시너지를 바탕으로 데미지 범위를 계산합니다.")
+#
+#     # 1. 시뮬레이션 설정
+#     sim_star = st.slider("평균 성급(Star)", 1, 3, 1)
+#
+#     # 캐릭터 목록이 4명 이상일 때만 기본값 4명 설정
+#     all_chars = list(stellive_db.keys())
+#     default_chars = all_chars[:4] if len(all_chars) >= 4 else all_chars
+#
+#     sim_members = st.multiselect("테스트 멤버 (4명)", all_chars, default=default_chars)
+#
+#     if len(sim_members) < 4:
+#         st.warning("정확한 테스트를 위해 4명을 선택해주세요.")
+#     else:
+#         # 2. 계산 로직 (새로운 시너지 시스템 반영)
+#         active_syns = get_active_synergies(sim_members)
+#
+#         adj_atk = 0
+#         for name in sim_members:
+#             char = stellive_db[name]
+#             base = char['atk']
+#
+#             # 성급 보너스 적용
+#             star_mult = 1.0 + (sim_star - 1) * BALANCE_CONFIG['STAR_BONUS_PER_LEVEL']
+#             base = int(base * star_mult)
+#
+#             # 시너지 보너스 적용
+#             char_syn_mult = 1.0
+#             for syn_key, mult in active_syns.items():
+#                 if char['group'] == syn_key or any(syn_key in t for t in char['trait']):
+#                     char_syn_mult *= mult
+#
+#             if char_syn_mult > 1.0:
+#                 base = int(base * char_syn_mult)
+#
+#             adj_atk += base
+#
+#         # 시나리오별 배율 정의 (날씨, 이벤트, QTE, 전투대사)
+#         # Min: 모두 디버프 + 최하 배율 콤보
+#         min_dmg = int(adj_atk * BALANCE_CONFIG['WEATHER_DEBUFF'] * BALANCE_CONFIG['EVENT_DEBUFF'] * 0.3 * 1.0)
+#         # Avg: 버프/디버프 없음 + 평균 콤보
+#         avg_dmg = int(adj_atk * 1.0 * 1.0 * 1.2 * 1.2)
+#         # Max: 모두 버프 + 최고 배율 콤보 (크리티컬 + 퍼펙트 QTE)
+#         max_dmg = int(adj_atk * BALANCE_CONFIG['WEATHER_BUFF'] * BALANCE_CONFIG['EVENT_BUFF'] * 2.2 * 2.0)
+#
+#         # 3. 시각화
+#         st.markdown("### 💥 예상 데미지 범위")
+#         st.metric("최소 데미지 (운 나쁨)", f"{min_dmg:,}")
+#         st.metric("평균 데미지 (보통)", f"{avg_dmg:,}")
+#         st.metric("최대 데미지 (운 대박)", f"{max_dmg:,}")
+#
+#         # 그래프 데이터 생성
+#         chart_data = {
+#             "Scenario": ["Min", "Avg", "Max"],
+#             "Damage": [min_dmg, avg_dmg, max_dmg]
+#         }
+#         st.bar_chart(chart_data, x="Scenario", y="Damage", color="#FF4B4B")
+#
+#         # 4. 현재 몬스터 체력과 비교
+#         st.markdown("### 👾 몬스터 목표치 비교")
+#         for m in monster_db:
+#             diff = m['target_score'] - avg_dmg
+#             diff_text = "쉬움 (클리어 가능)" if diff < 0 else "어려움 (스펙 부족)"
+#             diff_color = "blue" if diff < 0 else "red"
+#             st.caption(f"**{m['name']}** (목표: {m['target_score']:,}) : :{diff_color}[{diff_text}]")
