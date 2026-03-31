@@ -4,6 +4,7 @@ import time
 import pandas as pd
 import os
 from collections import Counter
+## 수정
 
 # ==========================================
 # 🎨 아이콘/이모지 매핑 설정
