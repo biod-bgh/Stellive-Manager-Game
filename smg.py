@@ -37,12 +37,18 @@ SYNERGY_CONFIG = {
     '용': {1: 1.5},
     '인간': {2: 1.3, 3: 2.0},
     '이세계': {2: 1.3, 3: 2.0},
-    '현대':{2: 1.3, 3: 2.0},
+    '현대': {2: 1.3, 3: 2.0},
     '보스': {1: 2.0},
 }
 
 # 3. 각종 배율 설정
 BALANCE_CONFIG = {
+    'MAX_TEAM_SIZE': 4,
+    'MAX_STAR_LEVEL': 4,
+    'MERGE_REQUIRE_COUNT': 3,  # 승급에 필요한 동일 캐릭터 카드 수
+    'DAILY_DRAW_COUNT': 4,
+    'STARTER_CANDIDATE_COUNT': 3,
+    'MAX_DAYS': 7,
     'STAR_BONUS_PER_LEVEL': 0.5,
     'WEATHER_BUFF': 1.2,
     'WEATHER_DEBUFF': 0.8,
@@ -79,7 +85,8 @@ def load_game_data():
 
             char_db[row['name']] = {
                 'group': row['group'],
-                'trait': fancy_traits,
+                'traits': raw_traits,  # 순수 특성
+                'fancy_traits': fancy_traits,  # 표시용 특성
                 'atk': int(row['atk']),
                 'desc': row['desc'],
                 'color': row['color'],
@@ -139,15 +146,15 @@ weather_db = {
 # ==========================================
 st.set_page_config(page_title="스텔맨, 최고가 되어라", page_icon="🏆", layout="wide")
 
+
 # 시너지별 공격력
 def get_active_synergies(team_list):
     keyword_counts = Counter()
     for name in team_list:
         char = stellive_db[name]
         keyword_counts[char['group']] += 1
-        for fancy_t in char['trait']:
-            clean_t = fancy_t.split(' ')[-1]
-            keyword_counts[clean_t] += 1
+        for trait in char['traits']:
+            keyword_counts[trait] += 1
 
     active = {}
     for key, tiers in SYNERGY_CONFIG.items():
@@ -201,7 +208,7 @@ def calculate_base_stats(team_list):
         applied_syns = []
         for syn_key, mult in active_synergies.items():
             # 그룹이 일치하거나, 특성에 포함되어 있다면
-            if char['group'] == syn_key or any(syn_key in t for t in char['trait']):
+            if char['group'] == syn_key or syn_key in char['traits']:
                 char_syn_mult *= mult
                 applied_syns.append(syn_key)
 
@@ -238,9 +245,8 @@ def process_battle_start(team_list):
     for name in team_list:
         char = stellive_db[name]
         keyword_counts[char['group']] += 1
-        for fancy_t in char['trait']:
-            clean_t = fancy_t.split(' ')[-1]
-            keyword_counts[clean_t] += 1
+        for trait in char['traits']:
+            keyword_counts[trait] += 1
 
     # QTE 시너지 발동 여부 확인
     synergy_trait = None
@@ -263,36 +269,15 @@ def process_battle_start(team_list):
 def finalize_battle(multiplier, reaction_time):
     temp = st.session_state['battle_temp']
     team_list = st.session_state['my_team']
-    active_synergies = get_active_synergies(team_list)
+    base_total_atk = temp['base_atk']
 
     total_damage = 0
     detailed_logs = []
 
     for name in team_list:
-        char_info = stellive_db[name]
         status = st.session_state['char_status'][name]
-
-        # 1. 성급 보너스
-        star_multiplier = 1.0 + (status['star'] - 1) * BALANCE_CONFIG['STAR_BONUS_PER_LEVEL']
-        base_atk = int(char_info['atk'] * star_multiplier)
-
-        # 2. 날씨 보정
-        if status['condition'] > 0:
-            base_atk = int(base_atk * BALANCE_CONFIG['WEATHER_BUFF'])
-        elif status['condition'] < 0:
-            base_atk = int(base_atk * BALANCE_CONFIG['WEATHER_DEBUFF'])
-
-        # 3. 시너지 보정
-        char_syn_mult = 1.0
-        for syn_key, mult in active_synergies.items():
-            if char_info['group'] == syn_key or any(syn_key in t for t in char_info['trait']):
-                char_syn_mult *= mult
-        if char_syn_mult > 1.0:
-            base_atk = int(base_atk * char_syn_mult)
-
         action = random.choice(battle_events)
-        mult = action['mult']
-        final_char_atk = int(base_atk * mult * multiplier)
+        final_char_atk = int(base_total_atk / len(team_list) * action['mult'] * multiplier)
         total_damage += final_char_atk
 
         if mult > 1.2:
@@ -369,7 +354,8 @@ def init_game():
     st.session_state['my_team'] = []
     st.session_state['qte_state'] = 'READY'
     st.session_state['qte_start_time'] = 0
-    st.session_state['starter_candidates'] = random.sample(list(stellive_db.keys()), 3)
+    st.session_state['starter_candidates'] = random.sample(list(stellive_db.keys()),
+                                                           BALANCE_CONFIG['STARTER_CANDIDATE_COUNT'])
     generate_daily_environment()
 
 
@@ -400,7 +386,7 @@ def toggle_member(name):
         if status['count'] <= 0:
             st.toast(f"🚫 {name} 멤버를 보유하고 있지 않습니다!", icon="🔒")
             return
-        if len(team) < 4:
+        if len(team) < BALANCE_CONFIG['MAX_TEAM_SIZE']:
             team.append(name)
         else:
             st.toast("🚫 파티는 최대 4명까지만 가능합니다!", icon="⚠️")
@@ -409,12 +395,12 @@ def toggle_member(name):
 def merge_member(name):
     status = st.session_state['char_status'][name]
 
-    if status['star'] >= 4:
-        st.toast(f"🚫 {name} 멤버는 이미 최고 레벨(4성)입니다!", icon="⭐")
+    if status['star'] >= BALANCE_CONFIG['MAX_STAR_LEVEL']:
+        st.toast(f"🚫 {name} 멤버는 이미 최고 레벨({BALANCE_CONFIG['MAX_STAR_LEVEL']}성)입니다!", icon="⭐")
         return
 
-    if status['count'] >= 3:
-        status['count'] -= 2
+    if status['count'] >= BALANCE_CONFIG['MERGE_REQUIRE_COUNT']:
+        status['count'] -= (BALANCE_CONFIG['MERGE_REQUIRE_COUNT'] - 1)
         status['star'] += 1
         st.toast(f"🎉 {name} {status['star']}성으로 승급 완료! (공격력 대폭 상승)", icon="🆙")
         st.rerun()
@@ -422,11 +408,11 @@ def merge_member(name):
 
 def end_day():
     st.session_state['day'] += 1
-    if st.session_state['day'] > 7:
+    if st.session_state['day'] > BALANCE_CONFIG['MAX_DAYS']:
         st.session_state['game_over'] = True
     else:
         generate_daily_environment()
-        draw_new_characters(4)
+        draw_new_characters(BALANCE_CONFIG['DAILY_DRAW_COUNT'])
     st.session_state['game_phase'] = 'planning'
     st.rerun()
 
@@ -450,7 +436,7 @@ def get_character_card_html(name, info, status, is_selected):
         border_style = "1px solid #e0e0e0"
 
     traits_html = ""
-    for t in info['trait']:
+    for t in info['fancy_traits']:
         traits_html += f"<span style='display:inline-block; background:{trait_bg}; padding:2px 6px; margin:2px; border-radius:4px; font-size:11px;'>{t}</span>"
 
     stars_html = "⭐" * star
@@ -501,7 +487,7 @@ if st.session_state['game_phase'] == 'starter_selection':
                 st.session_state['char_status'][name]['count'] += 1
                 all_names = list(stellive_db.keys())
                 remaining_pool = [n for n in all_names if n != name]
-                others = random.sample(remaining_pool, 4)
+                others = random.sample(remaining_pool, BALANCE_CONFIG['STARTER_BONUS_MEMBERS'])
                 for other in others:
                     st.session_state['char_status'][other]['count'] += 1
                 st.toast(f"🎉 {name} + {', '.join(others)} 영입 완료!", icon="🎁")
@@ -551,52 +537,49 @@ if st.session_state['game_phase'] == 'planning':
                     "<div style='border: 2px dashed #ccc; border-radius:10px; height: 150px; display:flex; align-items:center; justify-content:center; color:#ccc;'>EMPTY</div>",
                     unsafe_allow_html=True)
 
-        display_synergies = []
+    display_synergies = []
 
-        # [NEW] 시너지 시각화 UI (다단계 적용)
-        if len(my_team) > 0:
-            st.write("")
-            keyword_counts = Counter()
-            for name in my_team:
-                char = stellive_db[name]
-                keyword_counts[char['group']] += 1
-                for fancy_t in char['trait']:
-                    clean_t = fancy_t.split(' ')[-1]
-                    keyword_counts[clean_t] += 1
+    # [NEW] 시너지 시각화 UI (다단계 적용)
+    if len(my_team) > 0:
+        keyword_counts = Counter()
+        for name in my_team:
+            char = stellive_db[name]
+            keyword_counts[char['group']] += 1
+            for trait in char['traits']:
+                keyword_counts[trait] += 1
 
+        # 1. 다단계 공격력 시너지 시각화
+        for key, tiers in SYNERGY_CONFIG.items():
+            count = keyword_counts[key]
 
+            if key in QTE_KEYWORDS and count >= 1:
+                continue
 
-            # 1. 다단계 공격력 시너지 시각화
-            for key, tiers in SYNERGY_CONFIG.items():
-                count = keyword_counts[key]
+            best_mult = 1.0
+            for req_count in sorted(tiers.keys(), reverse=True):
+                if count >= req_count:
+                    best_mult = tiers[req_count]
+                    break
 
-                if key in QTE_KEYWORDS and count >= 1:
-                    continue
+            if best_mult > 1.0:
+                display_synergies.append({
+                    'name': key, 'lv': count,  # 현재 모은 인원 수 표시
+                    'effect': f"공격력 x{best_mult}",
+                    'color': 'linear-gradient(45deg, #9393F5, #53538A)'
+                })
 
-                best_mult = 1.0
-                for req_count in sorted(tiers.keys(), reverse=True):
-                    if count >= req_count:
-                        best_mult = tiers[req_count]
-                        break
-
-                if best_mult > 1.0:
-                    display_synergies.append({
-                        'name': key, 'lv': count,  # 현재 모은 인원 수 표시
-                        'effect': f"공격력 x{best_mult}",
-                        'color': 'linear-gradient(45deg, #9393F5, #53538A)'
-                    })
-
-            # 2. QTE 시너지
-            for qte_key in QTE_KEYWORDS:
-                if keyword_counts[qte_key] >= 2:
-                    display_synergies.append({
-                        'name': qte_key, 'lv': keyword_counts[qte_key],
-                        'effect': "QTE 발동!",
-                        'color': 'linear-gradient(45deg, #FF416C, #FF4B2B)'
-                    })
+        # 2. QTE 시너지
+        for qte_key in QTE_KEYWORDS:
+            if keyword_counts[qte_key] >= 2:
+                display_synergies.append({
+                    'name': qte_key, 'lv': keyword_counts[qte_key],
+                    'effect': "QTE 발동!",
+                    'color': 'linear-gradient(45deg, #FF416C, #FF4B2B)'
+                })
 
     with st.container(border=True):
         st.markdown("##### 🔗 현재 발동 시너지")
+        st.write("")  # 여백
         if not display_synergies:
             st.caption("발동된 시너지가 없습니다. 특성을 맞춰보세요!")
         else:
@@ -610,7 +593,8 @@ if st.session_state['game_phase'] == 'planning':
                         </div>
                         """, unsafe_allow_html=True)
 
-    if st.button("🔥 전투 시작 (START)", type="primary", use_container_width=True, disabled=len(my_team) != 4):
+    if st.button("🔥 전투 시작 (START)", type="primary", use_container_width=True,
+                 disabled=len(my_team) != BALANCE_CONFIG['MAX_TEAM_SIZE']):
         process_battle_start(my_team)
 
     st.divider()
@@ -641,8 +625,8 @@ if st.session_state['game_phase'] == 'planning':
                                  disabled=not is_owned):
                         toggle_member(name)
                         st.rerun()
-                    if status['count'] >= 3:
-                        if status['star'] < 4:
+                    if status['count'] >= BALANCE_CONFIG['MERGE_REQUIRE_COUNT']:
+                        if status['star'] < BALANCE_CONFIG['MAX_STAR_LEVEL']:
                             # 아직 4성이 아니면 MERGE 버튼 표시
                             if st.button(f"MERGE", key=f"merge_{title}_{name}", type="primary",
                                          use_container_width=True):
@@ -712,25 +696,27 @@ elif st.session_state['game_phase'] == 'result':
         st.write(f"**상대:** {monster['name']}")
 
     st.write("---")
-    btn_area = st.empty() # 다음 날로 넘어가는 버튼 자리
+    btn_area = st.empty()  # 다음 날로 넘어가는 버튼 자리
 
     # 🌟 [NEW] 애니메이션 연출 로직
     if not st.session_state.get('log_animated', False):
         # 1. QTE 결과 먼저 출력 (반응 속도 확인!)
         qte_area.info(log['crit_log'])
-        time.sleep(1.0) # 1초 대기
+        time.sleep(1.0)  # 1초 대기
 
         # 2. 멤버별 공격 로그를 0.8초 간격으로 한 명씩 출력
         accumulated_logs = []
         for line in log['detailed_logs']:
             accumulated_logs.append(line)
             # 로그를 예쁜 박스 안에 누적해서 그림
-            battle_log_area.markdown(f"<div style='border:1px solid rgba(255,255,255,0.2); padding:15px; border-radius:10px; background:rgba(0,0,0,0.1);'>{''.join(accumulated_logs)}</div>", unsafe_allow_html=True)
-            time.sleep(0.8) # 다음 멤버 공격까지 긴장감 형성!
+            battle_log_area.markdown(
+                f"<div style='border:1px solid rgba(255,255,255,0.2); padding:15px; border-radius:10px; background:rgba(0,0,0,0.1);'>{''.join(accumulated_logs)}</div>",
+                unsafe_allow_html=True)
+            time.sleep(0.8)  # 다음 멤버 공격까지 긴장감 형성!
 
         # 3. 계산 중... (드럼롤 효과 🥁)
         dmg_area.metric("🔥 총 데미지", "집계 중... ⏳")
-        time.sleep(1.5) # 1.5초간 뜸 들이기
+        time.sleep(1.5)  # 1.5초간 뜸 들이기
 
         # 4. 최종 데미지 & 등급 쾅!
         dmg_area.metric("🔥 총 데미지", f"{log['damage']:,}", f"달성률: {log['ratio']:.1f}%")
@@ -745,79 +731,81 @@ elif st.session_state['game_phase'] == 'result':
         # 이미 애니메이션을 다 본 상태 (새로고침 시 대기시간 생략)
         grade_area.markdown(log['result_msg'], unsafe_allow_html=True)
         qte_area.info(log['crit_log'])
-        battle_log_area.markdown(f"<div style='border:1px solid rgba(255,255,255,0.2); padding:15px; border-radius:10px; background:rgba(0,0,0,0.1);'>{''.join(log['detailed_logs'])}</div>", unsafe_allow_html=True)
+        battle_log_area.markdown(
+            f"<div style='border:1px solid rgba(255,255,255,0.2); padding:15px; border-radius:10px; background:rgba(0,0,0,0.1);'>{''.join(log['detailed_logs'])}</div>",
+            unsafe_allow_html=True)
         dmg_area.metric("🔥 총 데미지", f"{log['damage']:,}", f"달성률: {log['ratio']:.1f}%")
 
         # 결과 연출이 모두 끝난 후에만 '다음 날로' 버튼이 나타남
         if btn_area.button("🌙 정산 및 다음 날로", type="primary"):
             end_day()
 
-# # ==========================================
-# # [DEV TOOL] 기획자용 밸런스 시뮬레이터
-# # ==========================================
-# with st.sidebar.expander("🛠️ 기획자용 밸런스 계산기", expanded=True):
-#     st.write("캐릭터 조합과 시너지를 바탕으로 데미지 범위를 계산합니다.")
-#
-#     # 1. 시뮬레이션 설정
-#     sim_star = st.slider("평균 성급(Star)", 1, 3, 1)
-#
-#     # 캐릭터 목록이 4명 이상일 때만 기본값 4명 설정
-#     all_chars = list(stellive_db.keys())
-#     default_chars = all_chars[:4] if len(all_chars) >= 4 else all_chars
-#
-#     sim_members = st.multiselect("테스트 멤버 (4명)", all_chars, default=default_chars)
-#
-#     if len(sim_members) < 4:
-#         st.warning("정확한 테스트를 위해 4명을 선택해주세요.")
-#     else:
-#         # 2. 계산 로직 (새로운 시너지 시스템 반영)
-#         active_syns = get_active_synergies(sim_members)
-#
-#         adj_atk = 0
-#         for name in sim_members:
-#             char = stellive_db[name]
-#             base = char['atk']
-#
-#             # 성급 보너스 적용
-#             star_mult = 1.0 + (sim_star - 1) * BALANCE_CONFIG['STAR_BONUS_PER_LEVEL']
-#             base = int(base * star_mult)
-#
-#             # 시너지 보너스 적용
-#             char_syn_mult = 1.0
-#             for syn_key, mult in active_syns.items():
-#                 if char['group'] == syn_key or any(syn_key in t for t in char['trait']):
-#                     char_syn_mult *= mult
-#
-#             if char_syn_mult > 1.0:
-#                 base = int(base * char_syn_mult)
-#
-#             adj_atk += base
-#
-#         # 시나리오별 배율 정의 (날씨, 이벤트, QTE, 전투대사)
-#         # Min: 모두 디버프 + 최하 배율 콤보
-#         min_dmg = int(adj_atk * BALANCE_CONFIG['WEATHER_DEBUFF'] * BALANCE_CONFIG['EVENT_DEBUFF'] * 0.3 * 1.0)
-#         # Avg: 버프/디버프 없음 + 평균 콤보
-#         avg_dmg = int(adj_atk * 1.0 * 1.0 * 1.2 * 1.2)
-#         # Max: 모두 버프 + 최고 배율 콤보 (크리티컬 + 퍼펙트 QTE)
-#         max_dmg = int(adj_atk * BALANCE_CONFIG['WEATHER_BUFF'] * BALANCE_CONFIG['EVENT_BUFF'] * 2.2 * 2.0)
-#
-#         # 3. 시각화
-#         st.markdown("### 💥 예상 데미지 범위")
-#         st.metric("최소 데미지 (운 나쁨)", f"{min_dmg:,}")
-#         st.metric("평균 데미지 (보통)", f"{avg_dmg:,}")
-#         st.metric("최대 데미지 (운 대박)", f"{max_dmg:,}")
-#
-#         # 그래프 데이터 생성
-#         chart_data = {
-#             "Scenario": ["Min", "Avg", "Max"],
-#             "Damage": [min_dmg, avg_dmg, max_dmg]
-#         }
-#         st.bar_chart(chart_data, x="Scenario", y="Damage", color="#FF4B4B")
-#
-#         # 4. 현재 몬스터 체력과 비교
-#         st.markdown("### 👾 몬스터 목표치 비교")
-#         for m in monster_db:
-#             diff = m['target_score'] - avg_dmg
-#             diff_text = "쉬움 (클리어 가능)" if diff < 0 else "어려움 (스펙 부족)"
-#             diff_color = "blue" if diff < 0 else "red"
-#             st.caption(f"**{m['name']}** (목표: {m['target_score']:,}) : :{diff_color}[{diff_text}]")
+# ==========================================
+# [DEV TOOL] 기획자용 밸런스 시뮬레이터
+# ==========================================
+with st.sidebar.expander("🛠️ 기획자용 밸런스 계산기", expanded=True):
+    st.write("캐릭터 조합과 시너지를 바탕으로 데미지 범위를 계산합니다.")
+
+    # 1. 시뮬레이션 설정
+    sim_star = st.slider("평균 성급(Star)", 1, 3, 1)
+
+    # 캐릭터 목록이 4명 이상일 때만 기본값 4명 설정
+    all_chars = list(stellive_db.keys())
+    default_chars = all_chars[:4] if len(all_chars) >= 4 else all_chars
+
+    sim_members = st.multiselect("테스트 멤버 (4명)", all_chars, default=default_chars)
+
+    if len(sim_members) < 4:
+        st.warning("정확한 테스트를 위해 4명을 선택해주세요.")
+    else:
+        # 2. 계산 로직 (새로운 시너지 시스템 반영)
+        active_syns = get_active_synergies(sim_members)
+
+        adj_atk = 0
+        for name in sim_members:
+            char = stellive_db[name]
+            base = char['atk']
+
+            # 성급 보너스 적용
+            star_mult = 1.0 + (sim_star - 1) * BALANCE_CONFIG['STAR_BONUS_PER_LEVEL']
+            base = int(base * star_mult)
+
+            # 시너지 보너스 적용
+            char_syn_mult = 1.0
+            for syn_key, mult in active_syns.items():
+                if char['group'] == syn_key or syn_key in char['traits']:
+                    char_syn_mult *= mult
+
+            if char_syn_mult > 1.0:
+                base = int(base * char_syn_mult)
+
+            adj_atk += base
+
+        # 시나리오별 배율 정의 (날씨, 이벤트, QTE, 전투대사)
+        # Min: 모두 디버프 + 최하 배율 콤보
+        min_dmg = int(adj_atk * BALANCE_CONFIG['WEATHER_DEBUFF'] * BALANCE_CONFIG['EVENT_DEBUFF'] * 0.3 * 1.0)
+        # Avg: 버프/디버프 없음 + 평균 콤보
+        avg_dmg = int(adj_atk * 1.0 * 1.0 * 1.2 * 1.2)
+        # Max: 모두 버프 + 최고 배율 콤보 (크리티컬 + 퍼펙트 QTE)
+        max_dmg = int(adj_atk * BALANCE_CONFIG['WEATHER_BUFF'] * BALANCE_CONFIG['EVENT_BUFF'] * 2.2 * 2.0)
+
+        # 3. 시각화
+        st.markdown("### 💥 예상 데미지 범위")
+        st.metric("최소 데미지 (운 나쁨)", f"{min_dmg:,}")
+        st.metric("평균 데미지 (보통)", f"{avg_dmg:,}")
+        st.metric("최대 데미지 (운 대박)", f"{max_dmg:,}")
+
+        # 그래프 데이터 생성
+        chart_data = {
+            "Scenario": ["Min", "Avg", "Max"],
+            "Damage": [min_dmg, avg_dmg, max_dmg]
+        }
+        st.bar_chart(chart_data, x="Scenario", y="Damage", color="#FF4B4B")
+
+        # 4. 현재 몬스터 체력과 비교
+        st.markdown("### 👾 몬스터 목표치 비교")
+        for m in monster_db:
+            diff = m['target_score'] - avg_dmg
+            diff_text = "쉬움 (클리어 가능)" if diff < 0 else "어려움 (스펙 부족)"
+            diff_color = "blue" if diff < 0 else "red"
+            st.caption(f"**{m['name']}** (목표: {m['target_score']:,}) : :{diff_color}[{diff_text}]")
