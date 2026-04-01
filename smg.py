@@ -282,11 +282,9 @@ def finalize_battle(multiplier, reaction_time):
         final_char_atk = int(base_total_atk / len(team_list) * action['mult'] * multiplier)
         total_damage += final_char_atk
 
-        if mult > 1.2:
         if action['mult'] > 1.2:
             style = "font-size: 1.2em; color: #ff8c00; font-weight: bold; padding: 5px;"
             prefix = "💥 CRITICAL:"
-        elif mult < 1.0:
         elif action['mult'] < 1.0:
             style = "font-size: 0.9em; color: #808080; font-style: italic; padding: 2px;"
             prefix = "💧 WEAK:"
