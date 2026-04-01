@@ -49,6 +49,7 @@ BALANCE_CONFIG = {
     'MERGE_REQUIRE_COUNT': 3,  # 승급에 필요한 동일 캐릭터 카드 수
     'DAILY_DRAW_COUNT': 4,
     'STARTER_CANDIDATE_COUNT': 3,
+    'STARTER_BONUS_MEMBERS': 3,
     'MAX_DAYS': 7,
     'STAR_BONUS_PER_LEVEL': 0.5,
     'WEATHER_BUFF': 1.2,
@@ -282,9 +283,11 @@ def finalize_battle(multiplier, reaction_time):
         total_damage += final_char_atk
 
         if mult > 1.2:
+        if action['mult'] > 1.2:
             style = "font-size: 1.2em; color: #ff8c00; font-weight: bold; padding: 5px;"
             prefix = "💥 CRITICAL:"
         elif mult < 1.0:
+        elif action['mult'] < 1.0:
             style = "font-size: 0.9em; color: #808080; font-style: italic; padding: 2px;"
             prefix = "💧 WEAK:"
         else:
