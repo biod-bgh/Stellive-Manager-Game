@@ -26,9 +26,6 @@ DEFAULT_ICON = '🔹'
 # ⚙️ 게임 밸런스 & 시너지 설정 (마음대로 수정하세요!)
 # ==========================================
 
-# 1. QTE 발동 키워드 (2개 이상 모이면 발동)
-QTE_KEYWORDS = ['용', '전설', '보스', '이세계']
-
 # 2. 특성 시너지 설정
 SYNERGY_CONFIG = {
     '무희': {2: 1.3, 3: 2.0},
@@ -162,10 +159,6 @@ def get_active_synergies(team_list):
     for key, tiers in SYNERGY_CONFIG.items():
         count = keyword_counts[key]
 
-        # 🌟 [핵심 추가] QTE 발동(1명 이상) 키워드라면 공격력 시너지에서 제외!
-        if key in QTE_KEYWORDS and count >= 1:
-            continue
-
         best_mult = 1.0
 
         # 설정된 단계(필요 인원)를 내림차순(가장 높은 숫자부터)으로 검사
@@ -250,18 +243,17 @@ def process_battle_start(team_list):
         for trait in char['traits']:
             keyword_counts[trait] += 1
 
-    # QTE 시너지 발동 여부 확인
-    synergy_trait = None
-    for qte_key in QTE_KEYWORDS:
-        if keyword_counts[qte_key] >= 2:
-            synergy_trait = qte_key
-            break
+    # 🌟 랜덤 발동 확률 (40%)
+    synergy_candidates = []
+    if random.random() < 0.4:
+        for key, count in keyword_counts.items():
+            # 2명 이상 모인 그룹/특성이면 공명 후보로 올림
+            if count >= 2:
+                synergy_candidates.append(key)
 
-    if synergy_trait:
-        st.session_state['synergy_name'] = synergy_trait
-        st.toast(f"✨ '{synergy_trait}' 특성 공명 발동! 연계 공격 기회!", icon="⚔️")
-        st.session_state['qte_state'] = 'READY'
-        st.session_state['game_phase'] = 'attack_minigame'
+    if synergy_candidates:
+        st.session_state['qte_candidates'] = synergy_candidates
+        st.session_state['game_phase'] = 'synergy_selection'
         st.rerun()
     else:
         st.session_state['game_phase'] = 'calculating'
@@ -317,11 +309,11 @@ def finalize_battle(multiplier, reaction_time):
 
     qte_cfg = BALANCE_CONFIG['QTE']
     if multiplier >= qte_cfg['PERFECT_MULT']:
-        crit_log = f"⚡ **PERFECT QTE!** (반응: {reaction_time:.3f}초) 데미지 {multiplier}배!"
+        crit_log = f"⚡ **PERFECT 연계!** (반응: {reaction_time:.3f}초) 데미지 {multiplier}배!"
     elif multiplier >= qte_cfg['GREAT_MULT']:
-        crit_log = f"✨ **GREAT QTE!** (반응: {reaction_time:.3f}초) 데미지 {multiplier}배!"
+        crit_log = f"✨ **GREAT 연계!** (반응: {reaction_time:.3f}초) 데미지 {multiplier}배!"
     else:
-        crit_log = f"💨 **NORMAL QTE** (반응: {reaction_time:.3f}초) 기본 데미지로 공격."
+        crit_log = f"💨 **NORMAL 연계** (반응: {reaction_time:.3f}초) 기본 데미지로 공격."
 
     st.session_state['battle_log'] = {
         'damage': total_damage, 'logs': temp['logs'],
@@ -554,9 +546,6 @@ if st.session_state['game_phase'] == 'planning':
         for key, tiers in SYNERGY_CONFIG.items():
             count = keyword_counts[key]
 
-            if key in QTE_KEYWORDS and count >= 1:
-                continue
-
             best_mult = 1.0
             for req_count in sorted(tiers.keys(), reverse=True):
                 if count >= req_count:
@@ -568,15 +557,6 @@ if st.session_state['game_phase'] == 'planning':
                     'name': key, 'lv': count,  # 현재 모은 인원 수 표시
                     'effect': f"공격력 x{best_mult}",
                     'color': 'linear-gradient(45deg, #9393F5, #53538A)'
-                })
-
-        # 2. QTE 시너지
-        for qte_key in QTE_KEYWORDS:
-            if keyword_counts[qte_key] >= 2:
-                display_synergies.append({
-                    'name': qte_key, 'lv': keyword_counts[qte_key],
-                    'effect': "QTE 발동!",
-                    'color': 'linear-gradient(45deg, #FF416C, #FF4B2B)'
                 })
 
     with st.container(border=True):
@@ -638,9 +618,30 @@ if st.session_state['game_phase'] == 'planning':
                             st.button(f"MAX ⭐", key=f"max_{title}_{name}", disabled=True, use_container_width=True)
                 idx += 1
 
+elif st.session_state['game_phase'] == 'synergy_selection':
+    st.markdown("## 🎤 깜짝 라이브 공명 기회 발생!")
+    st.write("멤버들 간의 시너지가 폭발할 기회입니다! 어떤 특성으로 라이브 연계를 진행하시겠습니까?")
+    
+    candidates = st.session_state.get('qte_candidates', [])
+    cols = st.columns(len(candidates))
+    for idx, syn_name in enumerate(candidates):
+        with cols[idx % len(cols)]:
+            st.markdown(f"### {syn_name}")
+            st.caption("✨ Perfect 시 데미지 2배 \n\n✨ Great 시 데미지 1.5배")
+            if st.button(f"{syn_name} 공명 시작!", key=f"start_syn_{syn_name}", use_container_width=True):
+                st.session_state['synergy_name'] = syn_name
+                st.session_state['qte_state'] = 'READY'
+                st.session_state['game_phase'] = 'attack_minigame'
+                st.rerun()
+                
+    st.divider()
+    if st.button("⏭️ 연계 없이 일반 공격 진행", use_container_width=True):
+        st.session_state['game_phase'] = 'calculating'
+        st.rerun()
+
 elif st.session_state['game_phase'] == 'attack_minigame':
     synergy = st.session_state.get('synergy_name', '알 수 없음')
-    st.markdown(f"## ⚔️ '{synergy}' 특성 공명!")
+    st.markdown(f"## 🎤 '{synergy}' 라이브 연계!")
     col_spacer1, col_center, col_spacer2 = st.columns([1, 2, 1])
     with col_center:
         placeholder = st.empty()
